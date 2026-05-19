@@ -227,6 +227,67 @@ function drawPixelHeart(cx, cy, size, color) {
   }
 }
 
+function drawGoldenRetriever(x, y) {
+  // Body
+  pxRect(x + 4, y - 4, 18, 10, COLORS.gold);
+  pxRect(x + 2, y - 2, 22, 6, COLORS.goldLight);
+  // Legs
+  pxRect(x + 6, y + 4, 3, 6, COLORS.goldDark);
+  pxRect(x + 14, y + 4, 3, 6, COLORS.goldDark);
+  // Tail (wagging)
+  const tailWag = Math.sin(sceneTimer * 8) * 3;
+  pxRect(x + 21, y - 6 + tailWag, 3, 8, COLORS.gold);
+  // Head
+  pxRect(x + 16, y - 10, 10, 8, COLORS.gold);
+  pxRect(x + 17, y - 9, 4, 4, COLORS.goldLight);
+  // Ears
+  pxRect(x + 16, y - 13, 3, 4, COLORS.goldDark);
+  pxRect(x + 22, y - 13, 3, 4, COLORS.goldDark);
+  // Eyes
+  px(x + 19, y - 8, 1, 1, '#222');
+  px(x + 23, y - 8, 1, 1, '#222');
+  // Nose
+  px(x + 21, y - 5, 2, 1, '#222');
+  // Tongue
+  px(x + 21, y - 3, 2, 1, '#e0736a');
+}
+
+function drawSkiBoard(x, y) {
+  pxRect(x, y, 30, 2, COLORS.wood);
+  pxRect(x + 2, y + 4, 28, 2, COLORS.woodDark);
+}
+
+function drawCabin(x, y) {
+  const cw = 60, ch = 45;
+  // Walls
+  pxRect(x, y - ch, cw, ch, COLORS.wood);
+  // Log lines
+  for (let ly = y - ch + 6; ly < y; ly += 6) {
+    pxRect(x, ly, cw, 1, COLORS.woodDark);
+  }
+  // Roof (triangle)
+  for (let row = 0; row < 16; row++) {
+    const rowW = cw + 20 - row * 2;
+    pxRect(x - 10 + row, y - ch - row - 1, rowW, 1, COLORS.woodDark);
+  }
+  // Snow on roof
+  for (let sx = x - 12; sx < x + cw + 12; sx += 3) {
+    pxRect(sx, y - ch - 14, 3, 3, COLORS.snow);
+  }
+  // Door
+  pxRect(x + 22, y - 28, 14, 28, COLORS.woodDark);
+  // Door knob
+  px(x + 33, y - 14, 2, 2, COLORS.gold);
+  // Window (with warm light)
+  pxRect(x + 6, y - 30, 12, 12, COLORS.cabinLight);
+  pxRect(x + 42, y - 30, 12, 12, COLORS.cabinLight);
+  // Window frames
+  pxRect(x + 11, y - 30, 2, 12, COLORS.woodDark);
+  pxRect(x + 47, y - 30, 2, 12, COLORS.woodDark);
+  // Chimney
+  pxRect(x + 45, y - ch - 28, 8, 16, COLORS.woodDark);
+}
+
 // ── Particle System (Snow) ──
 let snowParticles = [];
 const SNOW_COUNT = 80;
@@ -299,10 +360,10 @@ let hotspots = [];
 function initSceneHotspots() {
   hotspots = [];
   switch (sceneIdx) {
-    case 0: if (typeof initScene0Hotspots === 'function') initScene0Hotspots(); break;
-    case 1: if (typeof initScene1Hotspots === 'function') initScene1Hotspots(); break;
-    case 2: if (typeof initScene2Hotspots === 'function') initScene2Hotspots(); break;
-    case 3: if (typeof initScene3Hotspots === 'function') initScene3Hotspots(); break;
+    case 0: initScene0Hotspots(); break;
+    case 1: initScene1Hotspots(); break;
+    case 2: initScene2Hotspots(); break;
+    case 3: initScene3Hotspots(); break;
   }
 }
 
@@ -422,11 +483,296 @@ function toggleMusic() {
 }
 window.toggleMusic = toggleMusic;
 
-// ── Scene render stubs (will be filled in Phase 2) ──
-function renderScene0(ctx) { drawSnowGround(180); }
-function renderScene1(ctx) { drawSnowGround(178); }
-function renderScene2(ctx) { drawSnowGround(170); }
-function renderScene3(ctx) { drawSnowGround(175); }
+// ── Scene 0: Mountain Base ──
+function initScene0Hotspots() {
+  hotspots = [
+    { x: 180, y: 148, w: 20, h: 30, action: () => {
+      showDialog(['小冷：哇，今天雪好大呀！', '小冷：准备好一起出发了吗？'], null);
+    }},
+    { x: 340, y: 152, w: 20, h: 30, action: () => {
+      showDialog(['你：和你在一起，去哪里都是晴天。'], null);
+    }},
+    { x: 100, y: 165, w: 24, h: 24, action: () => {
+      showDialog(['☃️ 雪人晃了晃...'], null);
+    }},
+    { x: 370, y: 100, w: 50, h: 40, action: () => {
+      showDialog(['路牌指向山下...', '新的旅程就要开始了！'], () => {
+        goToScene(1);
+      });
+    }},
+  ];
+}
+
+function renderScene0(ctx) {
+  // Mountains
+  pxRect(0, 90, 120, 60, '#c8dce8');
+  pxRect(90, 70, 100, 80, '#bfd4e0');
+  pxRect(170, 85, 120, 65, '#c8dce8');
+  pxRect(280, 60, 130, 90, '#b8ccd8');
+  pxRect(390, 75, 100, 75, '#c4d8e4');
+  // Snow caps
+  for (let mx = 0; mx < W; mx += 40) {
+    const mh = 15 + Math.sin(mx * 0.05) * 20;
+    pxRect(mx, 60, 60, mh, COLORS.snow);
+  }
+  // Trees
+  drawTree(40, 180, 40);
+  drawTree(70, 185, 35);
+  drawTree(420, 175, 45);
+  drawTree(450, 182, 38);
+  // Snow ground
+  drawSnowGround(180);
+  // Snowman
+  drawSnowman(110, 185);
+  // Signpost
+  pxRect(388, 120, 4, 50, COLORS.wood);
+  pxRect(378, 112, 24, 14, COLORS.wood);
+  pxRect(382, 116, 4, 4, COLORS.snow);
+  px(384, 114, 4, 4, COLORS.textBrown);
+  // Characters
+  drawCharacter(175, 163, COLORS.charA);
+  drawCharacter(355, 165, COLORS.charB);
+}
+
+// ── Scene 1: Meet Golden Retriever ──
+function initScene1Hotspots() {
+  hotspots = [
+    { x: 200, y: 148, w: 36, h: 28, action: () => {
+      showDialog(['🐕 金毛：汪汪！', '金毛摇着尾巴，叼来一块滑雪板', '金毛：带我去滑雪吧！'], () => {
+        goToScene(2);
+      });
+    }},
+    { x: 180, y: 145, w: 22, h: 30, action: () => {
+      showDialog(['小冷：天呐，好可爱的金毛！', '小冷：它想和我们一起玩！'], null);
+    }},
+    { x: 50, y: 55, w: 16, h: 14, action: () => {
+      showDialog(['远处的鸟：啾啾~'], null);
+    }},
+    { x: 170, y: 148, w: 22, h: 28, action: () => {
+      showDialog(['你：看来我们的滑雪队又多了一名成员！'], null);
+    }},
+  ];
+}
+
+function renderScene1(ctx) {
+  // Mountains
+  pxRect(0, 80, 120, 70, '#c0d4e0');
+  pxRect(100, 65, 110, 85, '#b8c8d4');
+  pxRect(210, 75, 130, 75, '#bcd0dc');
+  pxRect(330, 55, 150, 95, '#b0c4d0');
+  // Snow caps
+  for (let mx = 0; mx < W; mx += 35) {
+    pxRect(mx, 52, 50, 20, COLORS.snow);
+  }
+  // Trees
+  drawTree(20, 175, 38);
+  drawTree(55, 180, 42);
+  drawTree(400, 170, 48);
+  drawTree(440, 178, 36);
+  // Snow bumps
+  for (let i = 0; i < W; i += 16) {
+    const bh = 2 + Math.sin(i * 0.3 + 1) * 3;
+    pxRect(i, 176, 16, bh, COLORS.snow);
+  }
+  drawSnowGround(178);
+  // Characters
+  drawCharacter(170, 157, COLORS.charA);
+  drawCharacter(195, 159, COLORS.charB);
+  // Golden Retriever
+  drawGoldenRetriever(225, 168);
+  // Ski board
+  drawSkiBoard(240, 182);
+  // Bird
+  px(55, 56, 2, 1, '#5c3d2e');
+  px(59, 55, 2, 1, '#5c3d2e');
+  px(57, 54, 2, 2, '#8b6b4a');
+}
+
+// ── Scene 2: Skiing Together ──
+let scrollOffset = 0;
+
+function initScene2Hotspots() {
+  scrollOffset = 0;
+  hotspots = [
+    { x: 175, y: 110, w: 25, h: 35, action: () => {
+      showDialog(['小冷转过头来，笑得很开心 💫'], null);
+    }},
+    { x: 250, y: 145, w: 30, h: 25, action: () => {
+      showDialog(['金毛的耳朵飞起来了！', '它看起来比谁都开心 🐕'], null);
+    }},
+    { x: 400, y: 80, w: 50, h: 50, action: () => {
+      showDialog(['穿过一片松林...', '前方有温暖的灯光 ✨'], () => {
+        goToScene(3);
+      });
+    }},
+  ];
+}
+
+function updateScene2(dt) {
+  scrollOffset += 60 * dt;
+}
+
+function renderScene2(ctx) {
+  // Scrolling mountains
+  const layers = [
+    { y: 70, h: 100, color: '#b0c4d0', speed: 0.3 },
+    { y: 60, h: 110, color: '#a0b8c4', speed: 0.5 },
+    { y: 85, h: 85, color: '#bcccd6', speed: 0.2 },
+  ];
+  for (const layer of layers) {
+    const ox = -(scrollOffset * layer.speed) % W;
+    for (let mx = -100; mx < W + 100; mx += 130) {
+      pxRect(Math.floor(mx + ox), layer.y, 140, layer.h, layer.color);
+      pxRect(Math.floor(mx + ox) + 30, layer.y - 8, 80, 14, COLORS.snow);
+    }
+  }
+  // Scrolling trees
+  const treeOff = -(scrollOffset * 0.8) % 100;
+  for (let tx = -20; tx < W + 40; tx += 50) {
+    drawTree(Math.floor(tx + treeOff), 165, 28 + (tx % 3) * 6);
+  }
+  drawSnowGround(170);
+  // Skiing characters (fixed position)
+  drawCharacter(155, 148, COLORS.charA);
+  drawCharacter(185, 150, COLORS.charB);
+  // Dog running alongside
+  const dogBob = Math.sin(sceneTimer * 6) * 2;
+  drawGoldenRetriever(255, 158 + dogBob);
+  // Speed lines
+  for (let i = 0; i < 8; i++) {
+    const lx = ((i * 37 + scrollOffset * 1.5) % (W + 40)) - 20;
+    px(lx, 130 + i * 12, 8 + i % 3 * 4, 1, 'rgba(255,255,255,0.4)');
+  }
+  // Trail marker at end
+  const markerX = 420 - (scrollOffset * 0.5) % 500;
+  if (markerX > 300) {
+    pxRect(markerX, 100, 30, 24, COLORS.wood);
+    pxRect(markerX + 10, 104, 10, 16, COLORS.cabinLight);
+  }
+}
+
+// ── Scene 3: Cabin Confession ──
+let showConfession = false;
+let confessionTimer = 0;
+let hearts = [];
+
+function initScene3Hotspots() {
+  showConfession = false;
+  confessionTimer = 0;
+  hearts = [];
+  hotspots = [
+    { x: 210, y: 130, w: 60, h: 50, action: () => {
+      if (!showConfession) {
+        showConfession = true;
+        confessionTimer = 0;
+        for (let i = 0; i < 20; i++) {
+          hearts.push({
+            x: 200 + Math.random() * 80,
+            y: 100 + Math.random() * 60,
+            vx: (Math.random() - 0.5) * 30,
+            vy: -20 - Math.random() * 40,
+            size: 2 + Math.floor(Math.random() * 4),
+            life: 2 + Math.random() * 3,
+          });
+        }
+      }
+    }},
+    { x: 275, y: 173, w: 32, h: 22, action: () => {
+      showDialog(['金毛翻了个身，惬意地打着呼噜 💤'], null);
+    }},
+    { x: 335, y: 155, w: 22, h: 22, action: () => {
+      showDialog(['壁炉里的火苗跳动着，温暖了整个房间 🔥'], null);
+    }},
+    { x: 55, y: 75, w: 24, h: 24, action: () => {
+      showDialog(['窗外，雪还在静静地下着 ❄️'], null);
+    }},
+  ];
+}
+
+function updateScene3(dt) {
+  if (showConfession) {
+    confessionTimer += dt;
+  }
+  for (const h of hearts) {
+    h.x += h.vx * dt;
+    h.y += h.vy * dt;
+    h.vy -= 15 * dt;
+    h.life -= dt;
+  }
+  hearts = hearts.filter(h => h.life > 0);
+}
+
+function renderScene3(ctx) {
+  // Night sky
+  for (let i = 0; i < H; i++) {
+    const t = i / H;
+    const r = Math.floor(0x3a + (0x6e - 0x3a) * t);
+    const g = Math.floor(0x3a + (0x8e - 0x3a) * t);
+    const b = Math.floor(0x5a + (0xa0 - 0x5a) * t);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(0, i, W, 1);
+  }
+  // Background mountains (dark)
+  pxRect(0, 90, 140, 80, '#3a4a5a');
+  pxRect(120, 70, 130, 100, '#405060');
+  pxRect(240, 80, 140, 90, '#3a4a5a');
+  pxRect(360, 65, 130, 105, '#384858');
+  // Snow caps
+  for (let mx = 0; mx < W; mx += 50) {
+    pxRect(mx, 62, 60, 16, COLORS.snow);
+  }
+  drawSnowGround(175);
+  // Trees
+  drawTree(20, 175, 35);
+  drawTree(60, 175, 40);
+  drawTree(400, 175, 42);
+  // Cabin
+  drawCabin(210, 175);
+  // Fireplace glow
+  btx.fillStyle = 'rgba(240,128,64,0.15)';
+  btx.fillRect(210, 130, 60, 50);
+  // Golden retriever
+  const dogBreath = Math.sin(sceneTimer * 3) * 0.5;
+  drawGoldenRetriever(285 + dogBreath, 182);
+  // Characters
+  drawCharacter(175, 162, COLORS.charA);
+  drawCharacter(200, 164, COLORS.charB);
+  // Hearts
+  for (const h of hearts) {
+    const alpha = Math.min(h.life / 2, 1);
+    pxRect(Math.floor(h.x), Math.floor(h.y), h.size, h.size, COLORS.charB);
+  }
+  // Confession text
+  if (showConfession && confessionTimer > 0.8) {
+    const lines = [
+      '遇见你，是我像素世界里',
+      '最美的意外',
+      '',
+      '从雪山顶到山脚',
+      '我想和你一起滑过',
+      '人生所有的季节',
+      '',
+      '520快乐，小冷 ❤',
+    ];
+    const textAlpha = Math.min((confessionTimer - 0.8) / 2, 1);
+    const totalH = lines.length * 12;
+    const startY = 55;
+    // Text background
+    btx.fillStyle = `rgba(255,248,231,${textAlpha * 0.92})`;
+    btx.fillRect(120, startY - 6, 240, totalH + 16);
+    btx.strokeStyle = `rgba(212,132,90,${textAlpha})`;
+    btx.lineWidth = 2;
+    btx.strokeRect(120, startY - 6, 240, totalH + 16);
+    // Text lines
+    btx.fillStyle = `rgba(92,61,46,${textAlpha})`;
+    btx.font = '8px "Courier New", monospace';
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i] === '') continue;
+      const tw = btx.measureText(lines[i]).width;
+      btx.fillText(lines[i], 240 - tw / 2, startY + 6 + i * 12);
+    }
+  }
+}
 
 // ── Game Loop ──
 let lastTime = 0;
@@ -435,10 +781,10 @@ function update(dt) {
   updateSnow(dt);
   sceneTimer += dt;
 
-  if (sceneIdx === 2 && typeof updateScene2 === 'function') {
+  if (sceneIdx === 2) {
     updateScene2(dt);
   }
-  if (sceneIdx === 3 && typeof updateScene3 === 'function') {
+  if (sceneIdx === 3) {
     updateScene3(dt);
   }
 
