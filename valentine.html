@@ -537,7 +537,7 @@ function renderScene0(ctx) {
 // ── Scene 1: Meet Golden Retriever ──
 function initScene1Hotspots() {
   hotspots = [
-    { x: 200, y: 148, w: 36, h: 28, action: () => {
+    { x: 220, y: 148, w: 40, h: 34, action: () => {
       showDialog(['🐕 金毛：汪汪！', '金毛摇着尾巴，叼来一块滑雪板', '金毛：带我去滑雪吧！'], () => {
         goToScene(2);
       });
@@ -680,10 +680,10 @@ function initScene3Hotspots() {
     { x: 275, y: 173, w: 32, h: 22, action: () => {
       showDialog(['金毛翻了个身，惬意地打着呼噜 💤'], null);
     }},
-    { x: 335, y: 155, w: 22, h: 22, action: () => {
+    { x: 220, y: 135, w: 40, h: 30, action: () => {
       showDialog(['壁炉里的火苗跳动着，温暖了整个房间 🔥'], null);
     }},
-    { x: 55, y: 75, w: 24, h: 24, action: () => {
+    { x: 214, y: 142, w: 16, h: 16, action: () => {
       showDialog(['窗外，雪还在静静地下着 ❄️'], null);
     }},
   ];
@@ -740,8 +740,10 @@ function renderScene3(ctx) {
   // Hearts
   for (const h of hearts) {
     const alpha = Math.min(h.life / 2, 1);
+    btx.globalAlpha = alpha;
     pxRect(Math.floor(h.x), Math.floor(h.y), h.size, h.size, COLORS.charB);
   }
+  btx.globalAlpha = 1;
   // Confession text
   if (showConfession && confessionTimer > 0.8) {
     const lines = [
