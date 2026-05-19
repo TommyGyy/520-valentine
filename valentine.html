@@ -221,7 +221,7 @@ function drawPixelHeart(cx, cy, size, color) {
     for (let col = 0; col < pattern[row].length; col++) {
       if (pattern[row][col]) {
         btx.fillStyle = color;
-        btx.fillRect(cx + col * 2, cy + row * 2, 2, 2);
+        btx.fillRect(cx + col * size, cy + row * size, size, size);
       }
     }
   }
