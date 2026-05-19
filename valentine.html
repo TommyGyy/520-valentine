@@ -271,25 +271,25 @@ let sceneTimer = 0;
 let transitionAlpha = 0;
 let transitioning = false;
 let nextSceneQueued = false;
+let _targetScene = undefined;
 const TOTAL_SCENES = 4;
 
 function goToScene(idx) {
   if (transitioning) return;
   transitioning = true;
   nextSceneQueued = false;
-  window._targetScene = idx;
+  _targetScene = idx;
 }
 
 function finishTransition() {
-  if (window._targetScene !== undefined) {
-    sceneIdx = window._targetScene;
-    window._targetScene = undefined;
+  if (_targetScene !== undefined) {
+    sceneIdx = _targetScene;
+    _targetScene = undefined;
   } else {
     sceneIdx = Math.min(sceneIdx + 1, TOTAL_SCENES - 1);
   }
   sceneTimer = 0;
   transitioning = false;
-  transitionAlpha = 0;
   initSceneHotspots();
 }
 
