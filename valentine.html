@@ -5,1007 +5,281 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>520 ❤</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #2c1810;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden;
-    font-family: 'Courier New', monospace;
-    cursor: pointer;
-  }
-  canvas {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    border-radius: 4px;
-  }
-  #ui-layer {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-  }
-  #dialog-box {
-    position: absolute;
-    bottom: 15%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #fff8e7;
-    border: 3px solid #d4845a;
-    padding: 12px 20px;
-    color: #5c3d2e;
-    font-size: 14px;
-    font-family: 'Courier New', monospace;
-    max-width: 400px;
-    text-align: center;
-    display: none;
-    pointer-events: auto;
-    box-shadow: 4px 4px 0 rgba(0,0,0,0.15);
-    z-index: 10;
-  }
-  #dialog-box.visible { display: block; }
-  #dialog-text { line-height: 1.6; }
-  #dialog-hint {
-    font-size: 11px;
-    color: #a08060;
-    margin-top: 6px;
-  }
-  #music-toggle {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: rgba(255,248,231,0.9);
-    border: 2px solid #d4845a;
-    color: #5c3d2e;
-    padding: 6px 12px;
-    font-size: 12px;
-    font-family: 'Courier New', monospace;
-    cursor: pointer;
-    pointer-events: auto;
-    z-index: 10;
-    border-radius: 2px;
-  }
-  #music-toggle:hover { background: #fce4c8; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#2c1810;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace;cursor:pointer}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges;border-radius:4px}
+#mb{position:absolute;top:14px;right:14px;background:rgba(254,250,246,.9);border:2px solid #c8956c;color:#4a3020;padding:6px 12px;font-size:12px;font-family:'Courier New',monospace;cursor:pointer;z-index:10}
+#mb:hover{background:#f0e0d0}
+.dlg{position:absolute;bottom:18%;left:50%;transform:translateX(-50%);background:#fef8f0;border:3px solid #c8956c;padding:12px 20px;color:#4a3020;font-size:14px;max-width:420px;text-align:center;display:none;box-shadow:4px 4px 0 rgba(0,0,0,.15);z-index:10}
+.dlg.on{display:block}
+.dlg .t{line-height:1.6}
+.dlg .hint{font-size:11px;color:#a08060;margin-top:6px}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="ui-layer">
-  <button id="music-toggle" onclick="toggleMusic()">🔇 音乐关</button>
-  <div id="dialog-box">
-    <div id="dialog-text"></div>
-    <div id="dialog-hint">点击任意处继续</div>
-  </div>
-</div>
+<button id="mb" onclick="toggleMusic()">🔇</button>
+<div class="dlg" id="dlg"><div class="t" id="dt"></div><div class="hint">点击继续</div></div>
 <script>
-"use strict";
-
-// ── Constants ──
-const W = 480, H = 270;
-const SCALE = 2;
-const COLORS = {
-  sky:      '#b8d4e3',
-  skyTop:   '#7eb8da',
-  snow:     '#ffffff',
-  snowShadow:'#d8e8f0',
-  treeGreen:'#5d8c4a',
-  treeDark: '#3d6b34',
-  wood:     '#c4814b',
-  woodDark: '#a06235',
-  roofSnow: '#f0f4f8',
-  gold:     '#e8b44b',
-  goldDark: '#c98d28',
-  goldLight:'#f5d08c',
-  charA:    '#4a90c4',
-  charB:    '#e0736a',
-  textBrown:'#5c3d2e',
-  dialogBg: '#fff8e7',
-  dialogBorder:'#d4845a',
-  cabinLight:'#ffe8a0',
-  fire:     '#f08040',
+const W=480,H=270;
+const C={
+  skyT:'#7eb8da',skyB:'#c8dce8',sunT:'#f0b860',sunB:'#f5c890',
+  ntT:'#1a1a3a',ntB:'#3a3a6a',
+  snow:'#fefaf6',snSh:'#e8dcd0',snDk:'#d8ccc0',
+  mtF:'#c8c0d0',mtM:'#b0a8c0',mtN:'#a098b0',mtSn:'#f8f4f0',
+  tG:'#5a9040',tM:'#4a7a30',tD:'#3a6028',tT:'#8b6040',
+  wood:'#c8956c',wdD:'#b07850',wdL:'#d4a878',
+  roof:'#8b5a3a',win:'#ffe8a0',fire:'#f08040',
+  skin:'#f5d0b0',hair:'#4a3520',coatB:'#5a90c0',coatR:'#e07068',
+  gold:'#e8b44b',gdD:'#c98d28',gdL:'#f5d08c',
+  txt:'#4a3020',dBg:'#fef8f0',dBd:'#c8956c',
+  heart:'#e07068',star:'#ffe8c0'
 };
-
-// ── Canvas Setup ──
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-let scale = SCALE;
-
-function resize() {
-  const maxW = window.innerWidth;
-  const maxH = window.innerHeight;
-  scale = Math.min(Math.floor(maxW / W), Math.floor(maxH / H), 3);
-  canvas.width = W * scale;
-  canvas.height = H * scale;
-  ctx.imageSmoothingEnabled = false;
+const cv=document.getElementById('c');
+const cx=cv.getContext('2d');
+let sc=2;
+function rs(){
+  sc=Math.min(Math.floor(innerWidth/W),Math.floor(innerHeight/H),3);
+  cv.width=W*sc;cv.height=H*sc;cx.imageSmoothingEnabled=false;
 }
-window.addEventListener('resize', resize);
-resize();
+rs();addEventListener('resize',rs);
+const bf=document.createElement('canvas');bf.width=W;bf.height=H;
+const bx=bf.getContext('2d');bx.imageSmoothingEnabled=false;
+function fl(){cx.clearRect(0,0,cv.width,cv.height);cx.drawImage(bf,0,0,W,H,0,0,W*sc,H*sc)}
+function P(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w||1,h||1)}
+function PR(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w,h)}
+function PC(cx,cy,r,c){bx.fillStyle=c;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r)bx.fillRect(cx+dx|0,cy+dy|0,1,1)}
 
-// ── Double Buffer ──
-const buf = document.createElement('canvas');
-buf.width = W; buf.height = H;
-const btx = buf.getContext('2d');
-btx.imageSmoothingEnabled = false;
+// Snow particles
+let snow=[];
+for(let i=0;i<70;i++)snow.push({x:Math.random()*W,y:Math.random()*H,s:6+Math.random()*22,z:1+(Math.random()*2|0),w:Math.random()*6.28,ws:(Math.random()-.5)*2});
+function updSnow(dt){for(let p of snow){p.y+=p.s*dt;p.w+=p.ws*dt;p.x+=Math.sin(p.w)*3*dt;if(p.y>H+4){p.y=-4;p.x=Math.random()*W}if(p.x<-4)p.x=W+4;if(p.x>W+4)p.x=-4}}
+function drSnow(){for(let p of snow)P(p.x,p.y,p.z,p.z,C.snow)}
 
-function flip() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(buf, 0, 0, W, H, 0, 0, W * scale, H * scale);
-}
+// Drawing helpers
+function drSky(a,b){for(let i=0;i<H;i++){let t=i/H;let r=(a[0]+(b[0]-a[0])*t)|0,g=(a[1]+(b[1]-a[1])*t)|0,bb=(a[2]+(b[2]-a[2])*t)|0;bx.fillStyle=`rgb(${r},${g},${bb})`;bx.fillRect(0,i,W,1)}}
 
-// ── Pixel Drawing Utils ──
-function px(x, y, w, h, color) {
-  btx.fillStyle = color;
-  btx.fillRect(Math.floor(x), Math.floor(y), w || 1, h || 1);
+function drMt(x,y,w,h,fc,sc){
+  for(let i=0;i<w;i++){let mh=(h*(1-Math.abs(i-w/2)/(w/2)*.9))|0;PR(x+i,y-mh,1,mh,fc)}
+  for(let i=0;i<w;i++){let mh=(h*(1-Math.abs(i-w/2)/(w/2)*.9))|0;let ch=(h*(1-Math.abs(i-w/2)/(w/2)*.7))|0;for(let j=mh-ch;j>0;j-=4){let sw=2+(Math.sin(i*.4)*2|0);if(j>0)PR(x+i-sw/2,y-mh+j,sw,2,sc)}}
 }
 
-function pxRect(x, y, w, h, color) {
-  btx.fillStyle = color;
-  btx.fillRect(Math.floor(x), Math.floor(y), w, h);
+function drTree(x,y,h){
+  let tw=Math.max(h*.18|0,3);PR(x-tw/2,y-h*.25,tw,h*.25,C.tT);
+  let fh=h*.75,fs=h*.22;
+  for(let r=0;r<5;r++){let rw=fs-r*3;let rh=fh/5;let ry=y-h*.25-(r+1)*rh;let cl=r%2?C.tM:r==0?C.tG:C.tD;PR(x-rw/2,ry,rw+2,rh+2,cl)}
+  for(let sx=x-fs/2;sx<x+fs/2;sx+=3)PR(sx,y-h+1,3,2,C.snow)
 }
 
-function pxLine(x1, y1, x2, y2, color) {
-  btx.strokeStyle = color;
-  btx.lineWidth = 1;
-  btx.beginPath();
-  btx.moveTo(Math.floor(x1) + 0.5, Math.floor(y1) + 0.5);
-  btx.lineTo(Math.floor(x2) + 0.5, Math.floor(y2) + 0.5);
-  btx.stroke();
+function drCh(x,y,cc,pose){
+  let lx=pose=='ski'?-2:0,ly=pose=='ski'?2:0;
+  PR(x+2+lx,y+12+ly,2,6,'#3a3028');PR(x+8+lx,y+12+ly,2,6,'#3a3028');
+  PR(x+1+lx,y+4+ly,10,10,cc);PR(x+1+lx,y+10+ly,10,2,'#3a3028');
+  PR(x+3,y-4,6,7,C.skin);PR(x+2,y-6,8,3,C.hair);
+  P(x+5,y-2,1,1,'#222');P(x+8,y-2,1,1,'#222');
+  PR(x+1,y+1,10,2,C.coatR)
 }
 
-function pxCircle(cx, cy, r, color) {
-  btx.fillStyle = color;
-  for (let dy = -r; dy <= r; dy++) {
-    for (let dx = -r; dx <= r; dx++) {
-      if (dx * dx + dy * dy <= r * r) {
-        btx.fillRect(Math.floor(cx + dx), Math.floor(cy + dy), 1, 1);
-      }
-    }
-  }
+function drDog(x,y){
+  let tw=Math.sin(Date.now()/120)*3;
+  PR(x+4,y-4,18,10,C.gold);PR(x+2,y-2,22,6,C.gdL);
+  PR(x+6,y+4,3,6,C.gdD);PR(x+14,y+4,3,6,C.gdD);
+  PR(x+21,y-6+tw,3,8,C.gold);
+  PR(x+16,y-10,10,8,C.gold);PR(x+17,y-9,4,4,C.gdL);
+  PR(x+16,y-13,3,4,C.gdD);PR(x+22,y-13,3,4,C.gdD);
+  P(x+19,y-8,1,1,'#222');P(x+23,y-8,1,1,'#222');
+  P(x+21,y-5,2,1,'#222');P(x+21,y-3,2,1,'#e07068')
 }
 
-function drawTree(x, y, h) {
-  const w = Math.floor(h * 0.6);
-  pxRect(x - 2, y - Math.floor(h * 0.3), 4, Math.floor(h * 0.3), COLORS.woodDark);
-  for (let row = 0; row < 5; row++) {
-    const rowW = w - row * 4;
-    const rowH = Math.floor(h / 6);
-    const rowY = y - Math.floor(h * 0.3) - (row + 1) * rowH;
-    pxRect(x - Math.floor(rowW / 2), rowY, rowW, rowH, row % 2 ? COLORS.treeDark : COLORS.treeGreen);
-  }
-  pxRect(x - 3, y - h - 1, 6, 3, COLORS.snow);
+function drCab(x,y){
+  let cw=56,ch=42;
+  PR(x,y-ch,cw,ch,C.wood);
+  for(let ly=y-ch+5;ly<y;ly+=5)PR(x,ly,cw,1,C.wdD);
+  for(let r=0;r<14;r++){let rw=cw+18-r*2;PR(x-9+r,y-ch-r,rw,1,C.roof)}
+  for(let sx=x-10;sx<x+cw+10;sx+=3)PR(sx,y-ch-12,3,4,C.snow);
+  PR(x+20,y-26,12,26,C.wdD);P(x+29,y-14,2,2,C.gold);
+  PR(x+5,y-28,12,12,C.win);PR(x+37,y-28,12,12,C.win);
+  PR(x+10,y-28,2,12,C.wdD);PR(x+42,y-28,2,12,C.wdD);
+  PR(x+42,y-ch-24,8,14,C.wdD);
+  bx.fillStyle='rgba(240,128,64,.2)';bx.fillRect(x,y-ch-6,cw,ch+6)
 }
 
-function drawSnowman(x, y) {
-  pxCircle(x, y - 3, 6, COLORS.snow);
-  pxCircle(x, y - 10, 5, COLORS.snow);
-  pxCircle(x, y - 15, 4, COLORS.snow);
-  px(x - 2, y - 16, 1, 1, '#222');
-  px(x + 1, y - 16, 1, 1, '#222');
-  px(x, y - 14, 1, 1, '#f08040');
-  px(x + 1, y - 14, 1, 1, '#f08040');
+function drHeart(cx,cy,s){
+  let p=[[0,1,1,0,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,0,1,1,1,0,0],[0,0,0,1,0,0,0]];
+  for(let r=0;r<6;r++)for(let c=0;c<7;c++)if(p[r][c])PR(cx+c*s,cy+r*s,s,s,C.heart)
 }
 
-function drawSnowGround(y, color) {
-  pxRect(0, y, W, H - y, color || COLORS.snow);
-  for (let i = 0; i < 60; i++) {
-    const sx = (i * 37 + 13) % W;
-    const sy = y + 2 + (i * 19) % (H - y - 4);
-    px(sx, sy, 1, 1, COLORS.snowShadow);
-  }
+function drGround(y){
+  let pts=[];for(let i=0;i<W/8;i++)pts.push(y-2+Math.sin(i*.4)*3+Math.sin(i*.7+1)*2);
+  bx.fillStyle=C.snow;bx.beginPath();bx.moveTo(0,H);
+  for(let i=0;i<pts.length;i++)bx.lineTo(i*8,pts[i]|0);
+  bx.lineTo(W,pts[pts.length-1]|0);bx.lineTo(W,H);bx.fill();
+  for(let i=0;i<80;i++){let sx=(i*37+13)%W;let sy=(pts[sx/8|0]||y)+1+(i*19)%(H-(pts[sx/8|0]||y)-4);P(sx,sy,1,1,C.snSh)}
 }
 
-function drawCharacter(x, y, coatColor) {
-  pxRect(x + 2, y + 12, 2, 6, '#3a3a3a');
-  pxRect(x + 8, y + 12, 2, 6, '#3a3a3a');
-  pxRect(x + 1, y + 4, 10, 10, coatColor);
-  pxRect(x + 1, y + 10, 10, 2, '#3a3a3a');
-  pxRect(x + 3, y - 4, 6, 7, '#f5d0b0');
-  pxRect(x + 2, y - 6, 8, 3, '#3a3a3a');
-  px(x + 5, y - 2, 1, 1, '#222');
-  px(x + 8, y - 2, 1, 1, '#222');
-  pxRect(x + 1, y + 1, 10, 2, '#e0736a');
-}
-
-function drawPixelHeart(cx, cy, size, color) {
-  const pattern = [
-    [0,1,1,0,0,1,1,0],
-    [1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1],
-    [0,1,1,1,1,1,1,0],
-    [0,0,1,1,1,1,0,0],
-    [0,0,0,1,1,0,0,0],
-  ];
-  for (let row = 0; row < pattern.length; row++) {
-    for (let col = 0; col < pattern[row].length; col++) {
-      if (pattern[row][col]) {
-        btx.fillStyle = color;
-        btx.fillRect(cx + col * size, cy + row * size, size, size);
-      }
-    }
+// Scene manager
+let scene=0,timer=0,alpha=0,trans=0,nxt=0,target=-1;
+function goScene(i){if(trans)return;playSFX('adv');trans=1;nxt=0;target=i}
+function finTrans(){scene=target>=0?target:Math.min(scene+1,4);target=-1;timer=0;trans=0;alpha=0}
+function handleClick(){
+  if(scene==0){goScene(1);return}
+  if(scene==1){goScene(2);return}
+  if(scene==2){goScene(3);return}
+  if(scene==3){goScene(4);return}
+  if(scene==4&&!confess){
+    let rr=cv.getBoundingClientRect();let sx=(event.clientX-rr.left)/sc,sy=(event.clientY-rr.top)/sc;
+    if(sx>210&&sx<270&&sy>128&&sy<176){confess=1;confTm=0;
+      for(let i=0;i<22;i++)hrts.push({x:220+Math.random()*40,y:120+Math.random()*30,vx:(Math.random()-.5)*25,vy:-18-Math.random()*35,s:2+(Math.random()*5|0),life:2+Math.random()*3});
+      playSFX('adv')}
   }
 }
 
-function drawGoldenRetriever(x, y) {
-  // Body
-  pxRect(x + 4, y - 4, 18, 10, COLORS.gold);
-  pxRect(x + 2, y - 2, 22, 6, COLORS.goldLight);
-  // Legs
-  pxRect(x + 6, y + 4, 3, 6, COLORS.goldDark);
-  pxRect(x + 14, y + 4, 3, 6, COLORS.goldDark);
-  // Tail (wagging)
-  const tailWag = Math.sin(sceneTimer * 8) * 3;
-  pxRect(x + 21, y - 6 + tailWag, 3, 8, COLORS.gold);
-  // Head
-  pxRect(x + 16, y - 10, 10, 8, COLORS.gold);
-  pxRect(x + 17, y - 9, 4, 4, COLORS.goldLight);
-  // Ears
-  pxRect(x + 16, y - 13, 3, 4, COLORS.goldDark);
-  pxRect(x + 22, y - 13, 3, 4, COLORS.goldDark);
-  // Eyes
-  px(x + 19, y - 8, 1, 1, '#222');
-  px(x + 23, y - 8, 1, 1, '#222');
-  // Nose
-  px(x + 21, y - 5, 2, 1, '#222');
-  // Tongue
-  px(x + 21, y - 3, 2, 1, '#e0736a');
+// Dialog
+let dq=[],ds=0,dcb=null;
+const dbox=document.getElementById('dlg'),dtxt=document.getElementById('dt');
+function showDlg(t,cb){if(ds)return;dq=Array.isArray(t)?[...t]:[t];dcb=cb||null;ds=1;nextDlg()}
+function nextDlg(){if(!dq.length){dbox.classList.remove('on');ds=0;if(dcb){let c=dcb;dcb=null;c()}return}
+dtxt.textContent=dq.shift();dbox.classList.add('on')}
+addEventListener('click',e=>{if(e.target.id=='mb')return;if(ds){nextDlg();return}if(trans)return;handleClick()});
+
+// Scene state
+let scrollX=0,confess=0,confTm=0,hrts=[];
+
+// Scene rendering
+function renderTitle(){
+  drSky([0xf0,0xb8,0x60],[0xf5,0xc8,0x90]);
+  drMt(120,190,80,55,C.mtF,C.mtSn);drMt(30,195,60,40,C.mtF,C.mtSn);
+  drMt(380,185,90,60,C.mtM,C.mtSn);drMt(300,195,70,45,C.mtM,C.mtSn);
+  drGround(210);
+  drTree(50,210,38);drTree(90,215,32);drTree(380,205,45);drTree(420,210,35);drTree(450,212,30);
+  drTree(150,220,25);drTree(310,218,28);
+  drCh(170,190,C.coatB,'stand');drCh(200,192,C.coatR,'stand');
+  drDog(250,200);
+  // Pixel title "520 ❤ 520"
+  let tx=170,ty=70;
+  let L5=[[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,1]];
+  let L2=[[1,1,1,1,1],[0,0,0,0,1],[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,1]];
+  let L0=[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,1,1],[1,0,1,0,1],[0,1,0,0,1]];
+  function dL(g,ox,oy,c){for(let r=0;r<g.length;r++)for(let cc=0;cc<g[r].length;cc++)if(g[r][cc])PR(ox+cc*3,oy+r*3,3,3,c)}
+  dL(L5,tx,ty,C.coatR);dL(L2,tx+18,ty,C.txt);dL(L0,tx+39,ty,C.txt);
+  drHeart(tx+62,ty-4,2);
+  dL(L5,tx+76,ty,C.coatR);dL(L2,tx+94,ty,C.txt);dL(L0,tx+115,ty,C.txt);
+  bx.font='9px "Courier New",monospace';bx.fillStyle=C.txt;
+  let sub='一段像素旅程 · 为你而作';
+  bx.fillText(sub,240-bx.measureText(sub).width/2,120);
+  let a=(Math.sin(Date.now()/800)+1)/2;bx.fillStyle=`rgba(74,48,32,${.4+a*.6})`;
+  let hint='— 点击任意处开始 —';
+  bx.fillText(hint,240-bx.measureText(hint).width/2,198);
+  drSnow()
 }
 
-function drawSkiBoard(x, y) {
-  pxRect(x, y, 30, 2, COLORS.wood);
-  pxRect(x + 2, y + 4, 28, 2, COLORS.woodDark);
+function renderScene0(){
+  drSky([0x7e,0xb8,0xda],[0xc8,0xdc,0xe8]);
+  drMt(0,155,120,70,C.mtF,C.mtSn);drMt(80,145,110,80,C.mtM,C.mtSn);
+  drMt(180,152,130,72,C.mtN,C.mtSn);drMt(290,140,120,85,C.mtM,C.mtSn);
+  drMt(390,148,100,75,C.mtF,C.mtSn);
+  drGround(180);
+  drTree(35,178,36);drTree(65,182,30);drTree(410,175,42);drTree(445,180,34);
+  drTree(130,185,24);drTree(370,183,26);
+  PC(100,178,5,C.snow);PC(100,170,4,C.snow);PC(100,163,3,C.snow);
+  P(98,162,1,1,'#222');P(101,162,1,1,'#222');P(100,165,2,2,'#f08040');
+  PR(390,122,4,44,C.wood);PR(382,116,20,12,C.wood);PR(386,120,12,2,C.snow);
+  drCh(180,162,C.coatB,'stand');drCh(220,164,C.coatR,'stand');
+  let ba=(Math.sin(Date.now()/600)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
+  bx.font='10px "Courier New",monospace';bx.fillText('▼ 点击继续',200,260);
+  drSnow()
 }
 
-function drawCabin(x, y) {
-  const cw = 60, ch = 45;
-  // Walls
-  pxRect(x, y - ch, cw, ch, COLORS.wood);
-  // Log lines
-  for (let ly = y - ch + 6; ly < y; ly += 6) {
-    pxRect(x, ly, cw, 1, COLORS.woodDark);
-  }
-  // Roof (triangle)
-  for (let row = 0; row < 16; row++) {
-    const rowW = cw + 20 - row * 2;
-    pxRect(x - 10 + row, y - ch - row - 1, rowW, 1, COLORS.woodDark);
-  }
-  // Snow on roof
-  for (let sx = x - 12; sx < x + cw + 12; sx += 3) {
-    pxRect(sx, y - ch - 14, 3, 3, COLORS.snow);
-  }
-  // Door
-  pxRect(x + 22, y - 28, 14, 28, COLORS.woodDark);
-  // Door knob
-  px(x + 33, y - 14, 2, 2, COLORS.gold);
-  // Window (with warm light)
-  pxRect(x + 6, y - 30, 12, 12, COLORS.cabinLight);
-  pxRect(x + 42, y - 30, 12, 12, COLORS.cabinLight);
-  // Window frames
-  pxRect(x + 11, y - 30, 2, 12, COLORS.woodDark);
-  pxRect(x + 47, y - 30, 2, 12, COLORS.woodDark);
-  // Chimney
-  pxRect(x + 45, y - ch - 28, 8, 16, COLORS.woodDark);
+function renderScene1(){
+  drSky([0x7e,0xb8,0xda],[0xc8,0xdc,0xe8]);
+  drMt(0,148,100,68,C.mtF,C.mtSn);drMt(70,142,110,75,C.mtM,C.mtSn);
+  drMt(310,145,120,72,C.mtN,C.mtSn);drMt(400,148,100,68,C.mtF,C.mtSn);
+  drGround(175);
+  drTree(20,172,32);drTree(55,178,28);drTree(390,170,40);drTree(430,175,35);
+  for(let i=0;i<W;i+=12){let bh=2+Math.sin(i*.35+1)*3;PR(i,173,12,bh,C.snow)}
+  drCh(160,155,C.coatB,'stand');drCh(190,157,C.coatR,'stand');
+  drDog(240,166);
+  PR(255,180,26,2,C.wood);PR(257,184,24,2,C.wdD);
+  P(50,55,3,2,'#5c3d2e');P(56,54,3,2,'#5c3d2e');
+  let ba=(Math.sin(Date.now()/600)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
+  bx.fillText('▼ 点击继续',200,260);
+  drSnow()
 }
 
-// ── Particle System (Snow) ──
-let snowParticles = [];
-const SNOW_COUNT = 80;
-
-function initSnow() {
-  snowParticles = [];
-  for (let i = 0; i < SNOW_COUNT; i++) {
-    snowParticles.push({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      speed: 8 + Math.random() * 25,
-      size: 1 + Math.floor(Math.random() * 2),
-      wobble: Math.random() * Math.PI * 2,
-      wobbleSpeed: (Math.random() - 0.5) * 2,
-    });
-  }
+function renderScene2(){
+  drSky([0x7e,0xb8,0xda],[0xc8,0xdc,0xe8]);
+  scrollX+=1.2;
+  let lyrs=[{y:65,h:95,c:C.mtF,s:.2},{y:55,h:105,c:C.mtM,s:.4},{y:80,h:85,c:C.mtN,s:.3}];
+  for(let l of lyrs){let ox=-(scrollX*l.s)%W;for(let mx=-80;mx<W+80;mx+=110){let mx2=mx+ox;PR(mx2|0,l.y,120,l.h,l.c);PR(mx2+25|0,l.y-6,70,12,C.mtSn)}}
+  let to=-(scrollX*.7)%90;
+  for(let tx=-20;tx<W+40;tx+=45)drTree(tx+to|0,162,24+(tx%3)*5);
+  drGround(168);
+  drCh(155,148,C.coatB,'ski');drCh(185,150,C.coatR,'ski');
+  drDog(250,156+Math.sin(Date.now()/180)*2);
+  for(let i=0;i<6;i++){let lx=((i*43+scrollX*1.3)%(W+30))-15;P(lx,125+i*10,6+i%2*3,1,'rgba(255,255,255,.35)')}
+  let ba=(Math.sin(Date.now()/600)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
+  bx.fillText('▼ 点击继续',200,260);
+  drSnow()
 }
 
-function updateSnow(dt) {
-  for (const p of snowParticles) {
-    p.y += p.speed * dt;
-    p.wobble += p.wobbleSpeed * dt;
-    p.x += Math.sin(p.wobble) * 3 * dt;
-    if (p.y > H + 4) {
-      p.y = -4;
-      p.x = Math.random() * W;
-    }
-    if (p.x < -4) p.x = W + 4;
-    if (p.x > W + 4) p.x = -4;
+function renderScene3(){
+  drSky([0x1a,0x1a,0x3a],[0x3a,0x3a,0x6a]);
+  for(let i=0;i<35;i++){let sx=(i*83+17)%W,sy=(i*47+7)%120;let tw=Math.sin(Date.now()/1200+i)*.6+.4;bx.fillStyle=`rgba(255,232,192,${tw})`;bx.fillRect(sx,sy,2,2)}
+  drMt(0,130,130,65,'#3a3a52',C.mtSn);drMt(110,125,120,70,'#303048',C.mtSn);
+  drMt(350,128,140,68,'#3a3a52',C.mtSn);
+  drGround(170);
+  drTree(25,170,30);drTree(60,170,35);drTree(410,170,38);
+  drCab(215,170);
+  let db=Math.sin(Date.now()/300)*.5;drDog(290+db,180);
+  drCh(172,162,C.coatB,'stand');drCh(202,164,C.coatR,'stand');
+  bx.fillStyle='rgba(255,220,120,.25)';bx.fillRect(220,142,12,12);
+  bx.fillStyle='rgba(255,220,120,.25)';bx.fillRect(252,142,12,12);
+  for(let h of hrts){h.x+=h.vx*.016;h.y+=h.vy*.016;h.vy-=15*.016;h.life-=.016;let a=Math.min(h.life/2,1);bx.globalAlpha=a;PR(h.x|0,h.y|0,h.s,h.s,C.heart)}
+  bx.globalAlpha=1;hrts=hrts.filter(h=>h.life>0);
+  if(confess&&(confTm+=.016)>.8){
+    let ta=Math.min((confTm-.8)/2,1);
+    let lines=['遇见你，是我像素世界里','最美的意外','','从雪山顶到山脚','我想和你一起滑过','人生所有的季节','','520快乐，小冷 ❤'];
+    let sy=48,th=lines.length*12;
+    bx.fillStyle=`rgba(254,248,240,${ta*.92})`;bx.fillRect(110,sy-4,260,th+16);
+    bx.strokeStyle=`rgba(200,149,108,${ta})`;bx.lineWidth=2;bx.strokeRect(110,sy-4,260,th+16);
+    bx.fillStyle=`rgba(74,48,32,${ta})`;bx.font='9px "Courier New",monospace';
+    for(let i=0;i<lines.length;i++){if(!lines[i])continue;let tw=bx.measureText(lines[i]).width;bx.fillText(lines[i],240-tw/2,sy+6+i*12)}
   }
+  drSnow()
 }
 
-function renderSnow(ctx) {
-  for (const p of snowParticles) {
-    pxRect(p.x, p.y, p.size, p.size, COLORS.snow);
-  }
+// Audio engine
+let actx=null,mon=0,mto=null;
+const NF={C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392.00,A4:440.00,B4:493.88,C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880.00,B5:987.77,C6:1046.50,D6:1174.66,E6:1318.51};
+const mel=[{n:'C5',d:.25},{n:'E5',d:.25},{n:'G5',d:.25},{n:'C6',d:.5},{n:'G5',d:.25},{n:'E5',d:.25},{n:'C6',d:.25},{n:'G5',d:.25},{n:'E5',d:.25},{n:'D5',d:.5},{n:'F5',d:.25},{n:'A5',d:.25},{n:'D6',d:.25},{n:'C6',d:.25},{n:'A5',d:.25},{n:'G5',d:.5},{n:'E5',d:.25},{n:'G5',d:.25},{n:'C6',d:.25},{n:'E6',d:.25},{n:'D6',d:.25},{n:'C6',d:.75},{n:null,d:.25},{n:'E5',d:.5},{n:'G5',d:.25},{n:'E5',d:.25},{n:'C5',d:.5},{n:'D5',d:.25},{n:'E5',d:.25},{n:'F5',d:.5},{n:'E5',d:.25},{n:'D5',d:.25},{n:'C5',d:.75},{n:null,d:.25},{n:'G4',d:.5},{n:'C5',d:.25},{n:'E5',d:.25},{n:'G5',d:.5},{n:'C6',d:.5},{n:'G5',d:.5},{n:'E5',d:.5},{n:'C5',d:1}];
+const BPM=140,bd=60/BPM,tb=mel.reduce((s,n)=>s+n.d,0),ld=tb*bd;
+function pn(f,t,dur){let o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07,t+.02);g.gain.setValueAtTime(.07,t+dur*.6);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+dur+.01);let o2=actx.createOscillator(),g2=actx.createGain();o2.type='triangle';o2.frequency.value=f/2;g2.gain.setValueAtTime(0,t);g2.gain.linearRampToValueAtTime(.04,t+.02);g2.gain.setValueAtTime(.04,t+dur*.6);g2.gain.linearRampToValueAtTime(0,t+dur);o2.connect(g2);g2.connect(actx.destination);o2.start(t);o2.stop(t+dur+.01)}
+function sched(){if(!mon||!actx)return;let t=actx.currentTime+.05;for(let{n,d}of mel){let s=d*bd;if(n&&NF[n])pn(NF[n],t,s*.85);t+=s}mto=setTimeout(sched,ld*1000-100)}
+function startM(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();if(actx.state=='suspended')actx.resume();mon=1;sched();document.getElementById('mb').textContent='🎵'}
+function stopM(){mon=0;if(mto){clearTimeout(mto);mto=null}document.getElementById('mb').textContent='🔇'}
+function toggleMusic(){mon?stopM():startM()}window.toggleMusic=toggleMusic;
+function playSFX(tp){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();if(actx.state=='suspended')actx.resume();let n=actx.currentTime;
+if(tp=='adv'){[523,659,784,1047].forEach((f,i)=>{let o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=f;let tn=n+i*.08;g.gain.setValueAtTime(.06,tn);g.gain.linearRampToValueAtTime(0,tn+.12);o.connect(g);g.connect(actx.destination);o.start(tn);o.stop(tn+.13)})}
+if(tp=='click'){let o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=880;g.gain.setValueAtTime(.05,n);g.gain.linearRampToValueAtTime(0,n+.06);o.connect(g);g.connect(actx.destination);o.start(n);o.stop(n+.07)}
+if(tp=='bark'){let o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.setValueAtTime(300,n);o.frequency.linearRampToValueAtTime(200,n+.1);g.gain.setValueAtTime(.04,n);g.gain.linearRampToValueAtTime(0,n+.12);o.connect(g);g.connect(actx.destination);o.start(n);o.stop(n+.12)}}
+
+// Game loop
+let lt=0;
+function upd(dt){
+  updSnow(dt);timer+=dt;
+  if(trans){alpha=Math.min(alpha+dt*2.5,1);if(alpha>=1&&!nxt){nxt=1;finTrans()}}
+  else if(alpha>0)alpha=Math.max(alpha-dt*2.5,0)
 }
-
-// ── Scene Manager ──
-let sceneIdx = 0;
-let sceneTimer = 0;
-let transitionAlpha = 0;
-let transitioning = false;
-let nextSceneQueued = false;
-let _targetScene = undefined;
-const TOTAL_SCENES = 4;
-
-function goToScene(idx) {
-  if (transitioning) return;
-  playSFX('advance');
-  transitioning = true;
-  nextSceneQueued = false;
-  _targetScene = idx;
+function rndr(){
+  if(scene==0)renderTitle();
+  else{switch(scene){case 1:renderScene0();break;case 2:renderScene1();break;case 3:renderScene2();break;case 4:renderScene3();break}}
+  if(alpha>0){bx.fillStyle=`rgba(0,0,0,${alpha})`;bx.fillRect(0,0,W,H)}
 }
+function loop(ts){let dt=Math.min((ts-lt)/1000,.1);lt=ts;upd(dt);rndr();fl();requestAnimationFrame(loop)}
 
-function finishTransition() {
-  if (_targetScene !== undefined) {
-    sceneIdx = _targetScene;
-    _targetScene = undefined;
-  } else {
-    sceneIdx = Math.min(sceneIdx + 1, TOTAL_SCENES - 1);
-  }
-  sceneTimer = 0;
-  transitioning = false;
-  initSceneHotspots();
-}
-
-// ── Hotspot System ──
-let hotspots = [];
-
-function initSceneHotspots() {
-  hotspots = [];
-  switch (sceneIdx) {
-    case 0: initScene0Hotspots(); break;
-    case 1: initScene1Hotspots(); break;
-    case 2: initScene2Hotspots(); break;
-    case 3: initScene3Hotspots(); break;
-  }
-}
-
-function handleSceneClick(e) {
-  playSFX('click');
-  const rect = canvas.getBoundingClientRect();
-  const sx = (e.clientX - rect.left) / scale;
-  const sy = (e.clientY - rect.top) / scale;
-
-  // Sort by area ascending so smaller hotspots (windows, details)
-  // take priority over larger ones (cabin body).
-  const sorted = [...hotspots].sort((a, b) => (a.w * a.h) - (b.w * b.h));
-  for (const hs of sorted) {
-    if (sx >= hs.x && sx <= hs.x + hs.w && sy >= hs.y && sy <= hs.y + hs.h) {
-      hs.action();
-      return;
-    }
-  }
-}
-
-// ── Dialog System ──
-let dialogQueue = [];
-let dialogShowing = false;
-let dialogCallback = null;
-
-const dialogBox = document.getElementById('dialog-box');
-const dialogText = document.getElementById('dialog-text');
-const dialogHint = document.getElementById('dialog-hint');
-
-function showDialog(texts, cb) {
-  if (dialogShowing) return;
-  dialogQueue = Array.isArray(texts) ? [...texts] : [texts];
-  dialogCallback = cb || null;
-  dialogShowing = true;
-  showNextDialog();
-}
-
-function showNextDialog() {
-  if (dialogQueue.length === 0) {
-    hideDialog();
-    return;
-  }
-  const text = dialogQueue.shift();
-  dialogText.textContent = text;
-  dialogBox.classList.add('visible');
-  if (dialogQueue.length === 0) {
-    dialogHint.textContent = '点击任意处继续';
-  } else {
-    dialogHint.textContent = '点击继续...';
-  }
-}
-
-function hideDialog() {
-  dialogBox.classList.remove('visible');
-  dialogShowing = false;
-  if (dialogCallback) {
-    const cb = dialogCallback;
-    dialogCallback = null;
-    cb();
-  }
-}
-
-document.addEventListener('click', (e) => {
-  if (e.target.id === 'music-toggle') return;
-  if (titleShown) {
-    titleShown = false;
-    initSceneHotspots();
-    if (!musicOn) startMusic();
-    return;
-  }
-  if (dialogShowing) {
-    showNextDialog();
-    return;
-  }
-  if (transitioning) return;
-  handleSceneClick(e);
-});
-
-// ── Title Screen ──
-let titleShown = true;
-
-function renderTitle(ctx) {
-  for (let i = 0; i < H; i++) {
-    const t = i / H;
-    ctx.fillStyle = `rgb(${Math.floor(0xf0 + (0xe0-0xf0)*t)},${Math.floor(0xe0 + (0xc0-0xe0)*t)},${Math.floor(0xd0 + (0xa0-0xd0)*t)})`;
-    ctx.fillRect(0, i, W, 1);
-  }
-
-  ctx.fillStyle = COLORS.textBrown;
-  ctx.font = 'bold 16px "Courier New", monospace';
-  const title = '520 ❤';
-  const tw1 = ctx.measureText(title).width;
-  ctx.fillText(title, 240 - tw1 / 2, 100);
-
-  ctx.font = '10px "Courier New", monospace';
-  const subtitle = '一段像素旅程';
-  const tw2 = ctx.measureText(subtitle).width;
-  ctx.fillText(subtitle, 240 - tw2 / 2, 118);
-
-  drawPixelHeart(180, 80, 6, '#e0736a');
-  drawPixelHeart(300, 75, 5, '#f3a683');
-  drawPixelHeart(140, 90, 4, '#d4845a');
-
-  ctx.font = '8px "Courier New", monospace';
-  const hint = '点击任意处开始';
-  const tw3 = ctx.measureText(hint).width;
-  ctx.fillText(hint, 240 - tw3 / 2, 200);
-
-  for (let i = 0; i < 7; i++) {
-    drawTree(30 + i * 70, 230, 30 + i * 5);
-  }
-  drawSnowGround(230);
-}
-
-// ── Audio Engine (Chiptune) ──
-let audioCtx = null;
-let musicOn = false;
-let musicTimeout = null;
-
-const noteFreqs = {
-  'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23,
-  'G4': 392.00, 'A4': 440.00, 'B4': 493.88,
-  'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'F5': 698.46,
-  'G5': 783.99, 'A5': 880.00, 'B5': 987.77,
-  'C6': 1046.50, 'D6': 1174.66, 'E6': 1318.51,
-};
-
-const melody = [
-  { note: 'C5', dur: 0.25 }, { note: 'E5', dur: 0.25 }, { note: 'G5', dur: 0.25 },
-  { note: 'C6', dur: 0.5 },  { note: 'G5', dur: 0.25 }, { note: 'E5', dur: 0.25 },
-  { note: 'C6', dur: 0.25 }, { note: 'G5', dur: 0.25 }, { note: 'E5', dur: 0.25 },
-  { note: 'D5', dur: 0.5 },  { note: 'F5', dur: 0.25 }, { note: 'A5', dur: 0.25 },
-  { note: 'D6', dur: 0.25 }, { note: 'C6', dur: 0.25 }, { note: 'A5', dur: 0.25 },
-  { note: 'G5', dur: 0.5 },  { note: 'E5', dur: 0.25 }, { note: 'G5', dur: 0.25 },
-  { note: 'C6', dur: 0.25 }, { note: 'E6', dur: 0.25 }, { note: 'D6', dur: 0.25 },
-  { note: 'C6', dur: 0.75 }, { note: null, dur: 0.25 },
-  { note: 'E5', dur: 0.5 },  { note: 'G5', dur: 0.25 }, { note: 'E5', dur: 0.25 },
-  { note: 'C5', dur: 0.5 },  { note: 'D5', dur: 0.25 }, { note: 'E5', dur: 0.25 },
-  { note: 'F5', dur: 0.5 },  { note: 'E5', dur: 0.25 }, { note: 'D5', dur: 0.25 },
-  { note: 'C5', dur: 0.75 }, { note: null, dur: 0.25 },
-  { note: 'G4', dur: 0.5 },  { note: 'C5', dur: 0.25 }, { note: 'E5', dur: 0.25 },
-  { note: 'G5', dur: 0.5 },  { note: 'C6', dur: 0.5 },
-  { note: 'G5', dur: 0.5 },  { note: 'E5', dur: 0.5 },
-  { note: 'C5', dur: 1.0 },
-];
-
-const BPM = 140;
-const beatDuration = 60 / BPM;
-const totalBeats = melody.reduce((sum, n) => sum + n.dur, 0);
-const loopDuration = totalBeats * beatDuration;
-
-function playNote(freq, startTime, duration) {
-  // Square wave (classic chiptune lead)
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = 'square';
-  osc.frequency.value = freq;
-  gain.gain.setValueAtTime(0, startTime);
-  gain.gain.linearRampToValueAtTime(0.07, startTime + 0.02);
-  gain.gain.setValueAtTime(0.07, startTime + duration * 0.6);
-  gain.gain.linearRampToValueAtTime(0, startTime + duration);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start(startTime);
-  osc.stop(startTime + duration + 0.01);
-
-  // Triangle wave one octave down for warmth
-  const osc2 = audioCtx.createOscillator();
-  const gain2 = audioCtx.createGain();
-  osc2.type = 'triangle';
-  osc2.frequency.value = freq / 2;
-  gain2.gain.setValueAtTime(0, startTime);
-  gain2.gain.linearRampToValueAtTime(0.04, startTime + 0.02);
-  gain2.gain.setValueAtTime(0.04, startTime + duration * 0.6);
-  gain2.gain.linearRampToValueAtTime(0, startTime + duration);
-  osc2.connect(gain2);
-  gain2.connect(audioCtx.destination);
-  osc2.start(startTime);
-  osc2.stop(startTime + duration + 0.01);
-}
-
-function scheduleLoop() {
-  if (!musicOn || !audioCtx) return;
-  const now = audioCtx.currentTime;
-  let time = now + 0.05;
-  for (const { note, dur } of melody) {
-    const seconds = dur * beatDuration;
-    if (note && noteFreqs[note]) {
-      playNote(noteFreqs[note], time, seconds * 0.85);
-    }
-    time += seconds;
-  }
-  musicTimeout = setTimeout(scheduleLoop, (loopDuration * 1000) - 100);
-}
-
-function startMusic() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-  musicOn = true;
-  scheduleLoop();
-  document.getElementById('music-toggle').textContent = '🎵 音乐开';
-}
-
-function stopMusic() {
-  musicOn = false;
-  if (musicTimeout) {
-    clearTimeout(musicTimeout);
-    musicTimeout = null;
-  }
-  document.getElementById('music-toggle').textContent = '🔇 音乐关';
-}
-
-function toggleMusic() {
-  if (musicOn) {
-    stopMusic();
-  } else {
-    startMusic();
-  }
-}
-window.toggleMusic = toggleMusic;
-
-// ── Sound Effects ──
-function playSFX(type) {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-  const now = audioCtx.currentTime;
-
-  if (type === 'click') {
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = 'square';
-    o.frequency.value = 880;
-    g.gain.setValueAtTime(0.05, now);
-    g.gain.linearRampToValueAtTime(0, now + 0.06);
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(now); o.stop(now + 0.07);
-  } else if (type === 'advance') {
-    [523, 659, 784, 1047].forEach((freq, i) => {
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = 'square';
-      o.frequency.value = freq;
-      const t = now + i * 0.08;
-      g.gain.setValueAtTime(0.06, t);
-      g.gain.linearRampToValueAtTime(0, t + 0.12);
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start(t); o.stop(t + 0.13);
-    });
-  } else if (type === 'bark') {
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = 'square';
-    o.frequency.setValueAtTime(300, now);
-    o.frequency.linearRampToValueAtTime(200, now + 0.1);
-    g.gain.setValueAtTime(0.04, now);
-    g.gain.linearRampToValueAtTime(0, now + 0.12);
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(now); o.stop(now + 0.12);
-  }
-}
-
-// ── Scene 0: Mountain Base ──
-function initScene0Hotspots() {
-  hotspots = [
-    { x: 175, y: 148, w: 20, h: 30, action: () => {
-      showDialog(['你：和你在一起，去哪里都是晴天。'], null);
-    }},
-    { x: 355, y: 152, w: 20, h: 30, action: () => {
-      showDialog(['小冷：哇，今天雪好大呀！', '小冷：准备好一起出发了吗？'], null);
-    }},
-    { x: 100, y: 165, w: 24, h: 24, action: () => {
-      showDialog(['☃️ 雪人晃了晃...'], null);
-    }},
-    { x: 370, y: 100, w: 50, h: 40, action: () => {
-      showDialog(['路牌指向山下...', '新的旅程就要开始了！'], () => {
-        goToScene(1);
-      });
-    }},
-  ];
-}
-
-function renderScene0(ctx) {
-  // Mountains
-  pxRect(0, 90, 120, 60, '#c8dce8');
-  pxRect(90, 70, 100, 80, '#bfd4e0');
-  pxRect(170, 85, 120, 65, '#c8dce8');
-  pxRect(280, 60, 130, 90, '#b8ccd8');
-  pxRect(390, 75, 100, 75, '#c4d8e4');
-  // Snow caps
-  for (let mx = 0; mx < W; mx += 40) {
-    const mh = 15 + Math.sin(mx * 0.05) * 20;
-    pxRect(mx, 60, 60, mh, COLORS.snow);
-  }
-  // Trees
-  drawTree(40, 180, 40);
-  drawTree(70, 185, 35);
-  drawTree(420, 175, 45);
-  drawTree(450, 182, 38);
-  // Snow ground
-  drawSnowGround(180);
-  // Snowman
-  drawSnowman(110, 185);
-  // Signpost
-  pxRect(388, 120, 4, 50, COLORS.wood);
-  pxRect(378, 112, 24, 14, COLORS.wood);
-  pxRect(382, 116, 4, 4, COLORS.snow);
-  px(384, 114, 4, 4, COLORS.textBrown);
-  // Characters
-  drawCharacter(175, 163, COLORS.charA);
-  drawCharacter(355, 165, COLORS.charB);
-}
-
-// ── Scene 1: Meet Golden Retriever ──
-function initScene1Hotspots() {
-  hotspots = [
-    { x: 220, y: 148, w: 40, h: 34, action: () => {
-      playSFX('bark');
-      showDialog(['🐕 金毛：汪汪！', '金毛摇着尾巴，叼来一块滑雪板', '金毛：带我去滑雪吧！'], () => {
-        goToScene(2);
-      });
-    }},
-    { x: 180, y: 145, w: 22, h: 30, action: () => {
-      showDialog(['小冷：天呐，好可爱的金毛！', '小冷：它想和我们一起玩！'], null);
-    }},
-    { x: 50, y: 55, w: 16, h: 14, action: () => {
-      showDialog(['远处的鸟：啾啾~'], null);
-    }},
-    { x: 170, y: 148, w: 22, h: 28, action: () => {
-      showDialog(['你：看来我们的滑雪队又多了一名成员！'], null);
-    }},
-  ];
-}
-
-function renderScene1(ctx) {
-  // Mountains
-  pxRect(0, 80, 120, 70, '#c0d4e0');
-  pxRect(100, 65, 110, 85, '#b8c8d4');
-  pxRect(210, 75, 130, 75, '#bcd0dc');
-  pxRect(330, 55, 150, 95, '#b0c4d0');
-  // Snow caps
-  for (let mx = 0; mx < W; mx += 35) {
-    pxRect(mx, 52, 50, 20, COLORS.snow);
-  }
-  // Trees
-  drawTree(20, 175, 38);
-  drawTree(55, 180, 42);
-  drawTree(400, 170, 48);
-  drawTree(440, 178, 36);
-  // Snow bumps
-  for (let i = 0; i < W; i += 16) {
-    const bh = 2 + Math.sin(i * 0.3 + 1) * 3;
-    pxRect(i, 176, 16, bh, COLORS.snow);
-  }
-  drawSnowGround(178);
-  // Characters
-  drawCharacter(170, 157, COLORS.charA);
-  drawCharacter(195, 159, COLORS.charB);
-  // Golden Retriever
-  drawGoldenRetriever(225, 168);
-  // Ski board
-  drawSkiBoard(240, 182);
-  // Bird
-  px(55, 56, 2, 1, '#5c3d2e');
-  px(59, 55, 2, 1, '#5c3d2e');
-  px(57, 54, 2, 2, '#8b6b4a');
-}
-
-// ── Scene 2: Skiing Together ──
-let scrollOffset = 0;
-
-function initScene2Hotspots() {
-  scrollOffset = 0;
-  hotspots = [
-    { x: 175, y: 110, w: 25, h: 35, action: () => {
-      showDialog(['小冷转过头来，笑得很开心 💫'], null);
-    }},
-    { x: 250, y: 145, w: 30, h: 25, action: () => {
-      showDialog(['金毛的耳朵飞起来了！', '它看起来比谁都开心 🐕'], null);
-    }},
-    { x: 400, y: 80, w: 50, h: 50, _tag: 'trailMarker', action: () => {
-      showDialog(['穿过一片松林...', '前方有温暖的灯光 ✨'], () => {
-        goToScene(3);
-      });
-    }},
-  ];
-}
-
-function updateScene2(dt) {
-  scrollOffset += 60 * dt;
-  // Keep trail marker hotspot aligned with the scrolling visual marker
-  const markerX = 420 - (scrollOffset * 0.5) % 500;
-  for (const hs of hotspots) {
-    if (hs._tag === 'trailMarker') {
-      hs.x = markerX > 300 ? markerX - 5 : -100;
-    }
-  }
-}
-
-function renderScene2(ctx) {
-  // Scrolling mountains
-  const layers = [
-    { y: 70, h: 100, color: '#b0c4d0', speed: 0.3 },
-    { y: 60, h: 110, color: '#a0b8c4', speed: 0.5 },
-    { y: 85, h: 85, color: '#bcccd6', speed: 0.2 },
-  ];
-  for (const layer of layers) {
-    const ox = -(scrollOffset * layer.speed) % W;
-    for (let mx = -100; mx < W + 100; mx += 130) {
-      pxRect(Math.floor(mx + ox), layer.y, 140, layer.h, layer.color);
-      pxRect(Math.floor(mx + ox) + 30, layer.y - 8, 80, 14, COLORS.snow);
-    }
-  }
-  // Scrolling trees
-  const treeOff = -(scrollOffset * 0.8) % 100;
-  for (let tx = -20; tx < W + 40; tx += 50) {
-    drawTree(Math.floor(tx + treeOff), 165, 28 + (tx % 3) * 6);
-  }
-  drawSnowGround(170);
-  // Skiing characters (fixed position)
-  drawCharacter(155, 148, COLORS.charA);
-  drawCharacter(185, 150, COLORS.charB);
-  // Dog running alongside
-  const dogBob = Math.sin(sceneTimer * 6) * 2;
-  drawGoldenRetriever(255, 158 + dogBob);
-  // Speed lines
-  for (let i = 0; i < 8; i++) {
-    const lx = ((i * 37 + scrollOffset * 1.5) % (W + 40)) - 20;
-    px(lx, 130 + i * 12, 8 + i % 3 * 4, 1, 'rgba(255,255,255,0.4)');
-  }
-  // Trail marker at end
-  const markerX = 420 - (scrollOffset * 0.5) % 500;
-  if (markerX > 300) {
-    pxRect(markerX, 100, 30, 24, COLORS.wood);
-    pxRect(markerX + 10, 104, 10, 16, COLORS.cabinLight);
-  }
-}
-
-// ── Scene 3: Cabin Confession ──
-let showConfession = false;
-let confessionTimer = 0;
-let hearts = [];
-
-function initScene3Hotspots() {
-  showConfession = false;
-  confessionTimer = 0;
-  hearts = [];
-  hotspots = [
-    { x: 210, y: 130, w: 60, h: 50, action: () => {
-      if (!showConfession) {
-        showConfession = true;
-        confessionTimer = 0;
-        for (let i = 0; i < 20; i++) {
-          hearts.push({
-            x: 200 + Math.random() * 80,
-            y: 100 + Math.random() * 60,
-            vx: (Math.random() - 0.5) * 30,
-            vy: -20 - Math.random() * 40,
-            size: 2 + Math.floor(Math.random() * 4),
-            life: 2 + Math.random() * 3,
-          });
-        }
-      }
-    }},
-    { x: 275, y: 173, w: 32, h: 22, action: () => {
-      playSFX('bark');
-      showDialog(['金毛翻了个身，惬意地打着呼噜 💤'], null);
-    }},
-    { x: 220, y: 135, w: 40, h: 30, action: () => {
-      showDialog(['壁炉里的火苗跳动着，温暖了整个房间 🔥'], null);
-    }},
-    { x: 214, y: 142, w: 16, h: 16, action: () => {
-      showDialog(['窗外，雪还在静静地下着 ❄️'], null);
-    }},
-  ];
-}
-
-function updateScene3(dt) {
-  if (showConfession) {
-    confessionTimer += dt;
-  }
-  for (const h of hearts) {
-    h.x += h.vx * dt;
-    h.y += h.vy * dt;
-    h.vy -= 15 * dt;
-    h.life -= dt;
-  }
-  hearts = hearts.filter(h => h.life > 0);
-}
-
-function renderScene3(ctx) {
-  // Night sky
-  for (let i = 0; i < H; i++) {
-    const t = i / H;
-    const r = Math.floor(0x3a + (0x6e - 0x3a) * t);
-    const g = Math.floor(0x3a + (0x8e - 0x3a) * t);
-    const b = Math.floor(0x5a + (0xa0 - 0x5a) * t);
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(0, i, W, 1);
-  }
-  // Background mountains (dark)
-  pxRect(0, 90, 140, 80, '#3a4a5a');
-  pxRect(120, 70, 130, 100, '#405060');
-  pxRect(240, 80, 140, 90, '#3a4a5a');
-  pxRect(360, 65, 130, 105, '#384858');
-  // Snow caps
-  for (let mx = 0; mx < W; mx += 50) {
-    pxRect(mx, 62, 60, 16, COLORS.snow);
-  }
-  drawSnowGround(175);
-  // Trees
-  drawTree(20, 175, 35);
-  drawTree(60, 175, 40);
-  drawTree(400, 175, 42);
-  // Cabin
-  drawCabin(210, 175);
-  // Fireplace glow
-  btx.fillStyle = 'rgba(240,128,64,0.15)';
-  btx.fillRect(210, 130, 60, 50);
-  // Golden retriever
-  const dogBreath = Math.sin(sceneTimer * 3) * 0.5;
-  drawGoldenRetriever(285 + dogBreath, 182);
-  // Characters
-  drawCharacter(175, 162, COLORS.charA);
-  drawCharacter(200, 164, COLORS.charB);
-  // Hearts
-  for (const h of hearts) {
-    const alpha = Math.min(h.life / 2, 1);
-    btx.globalAlpha = alpha;
-    pxRect(Math.floor(h.x), Math.floor(h.y), h.size, h.size, COLORS.charB);
-  }
-  btx.globalAlpha = 1;
-  // Confession text
-  if (showConfession && confessionTimer > 0.8) {
-    const lines = [
-      '遇见你，是我像素世界里',
-      '最美的意外',
-      '',
-      '从雪山顶到山脚',
-      '我想和你一起滑过',
-      '人生所有的季节',
-      '',
-      '520快乐，小冷 ❤',
-    ];
-    const textAlpha = Math.min((confessionTimer - 0.8) / 2, 1);
-    const totalH = lines.length * 12;
-    const startY = 55;
-    // Text background
-    btx.fillStyle = `rgba(255,248,231,${textAlpha * 0.92})`;
-    btx.fillRect(120, startY - 6, 240, totalH + 16);
-    btx.strokeStyle = `rgba(212,132,90,${textAlpha})`;
-    btx.lineWidth = 2;
-    btx.strokeRect(120, startY - 6, 240, totalH + 16);
-    // Text lines
-    btx.fillStyle = `rgba(92,61,46,${textAlpha})`;
-    btx.font = '8px "Courier New", monospace';
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i] === '') continue;
-      const tw = btx.measureText(lines[i]).width;
-      btx.fillText(lines[i], 240 - tw / 2, startY + 6 + i * 12);
-    }
-  }
-}
-
-// ── Game Loop ──
-let lastTime = 0;
-
-function update(dt) {
-  updateSnow(dt);
-  sceneTimer += dt;
-
-  if (sceneIdx === 2) {
-    updateScene2(dt);
-  }
-  if (sceneIdx === 3) {
-    updateScene3(dt);
-  }
-
-  if (transitioning) {
-    transitionAlpha = Math.min(transitionAlpha + dt * 2.5, 1);
-    if (transitionAlpha >= 1 && !nextSceneQueued) {
-      nextSceneQueued = true;
-      finishTransition();
-    }
-  } else if (transitionAlpha > 0) {
-    transitionAlpha = Math.max(transitionAlpha - dt * 2.5, 0);
-  }
-}
-
-function render(ctx) {
-  if (titleShown) {
-    renderTitle(ctx);
-    renderSnow(ctx);
-    return;
-  }
-
-  if (sceneIdx !== 3) {
-    for (let i = 0; i < H; i++) {
-      const t = i / H;
-      const r = Math.floor(0xb8 + (0x7e - 0xb8) * t);
-      const g = Math.floor(0xd4 + (0xb8 - 0xd4) * t);
-      const b = Math.floor(0xe3 + (0xda - 0xe3) * t);
-      ctx.fillStyle = `rgb(${r},${g},${b})`;
-      ctx.fillRect(0, i, W, 1);
-    }
-  }
-
-  switch (sceneIdx) {
-    case 0: renderScene0(ctx); break;
-    case 1: renderScene1(ctx); break;
-    case 2: renderScene2(ctx); break;
-    case 3: renderScene3(ctx); break;
-  }
-
-  renderSnow(ctx);
-
-  if (transitionAlpha > 0) {
-    ctx.fillStyle = `rgba(0,0,0,${transitionAlpha})`;
-    ctx.fillRect(0, 0, W, H);
-  }
-}
-
-function gameLoop(ts) {
-  const dt = Math.min((ts - lastTime) / 1000, 0.1);
-  lastTime = ts;
-
-  update(dt);
-  render(btx);
-  flip();
-  requestAnimationFrame(gameLoop);
-}
-
-initSnow();
-requestAnimationFrame(gameLoop);
+// Init
+addEventListener('click',function s(){if(!mon)startM()},{once:1});
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
