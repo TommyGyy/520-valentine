@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>520 ❤</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #2c1810;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border-radius: 4px;
+  }
+  #ui-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  #dialog-box {
+    position: absolute;
+    bottom: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff8e7;
+    border: 3px solid #d4845a;
+    padding: 12px 20px;
+    color: #5c3d2e;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    max-width: 400px;
+    text-align: center;
+    display: none;
+    pointer-events: auto;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.15);
+    z-index: 10;
+  }
+  #dialog-box.visible { display: block; }
+  #dialog-text { line-height: 1.6; }
+  #dialog-hint {
+    font-size: 11px;
+    color: #a08060;
+    margin-top: 6px;
+  }
+  #music-toggle {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(255,248,231,0.9);
+    border: 2px solid #d4845a;
+    color: #5c3d2e;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 10;
+    border-radius: 2px;
+  }
+  #music-toggle:hover { background: #fce4c8; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui-layer">
+  <button id="music-toggle" onclick="toggleMusic()">🔇 音乐关</button>
+  <div id="dialog-box">
+    <div id="dialog-text"></div>
+    <div id="dialog-hint">点击任意处继续</div>
+  </div>
+</div>
+<script>
+"use strict";
+
+// ── Constants ──
+const W = 480, H = 270;
+const SCALE = 2;
+const COLORS = {
+  sky:      '#b8d4e3',
+  skyTop:   '#7eb8da',
+  snow:     '#ffffff',
+  snowShadow:'#d8e8f0',
+  treeGreen:'#5d8c4a',
+  treeDark: '#3d6b34',
+  wood:     '#c4814b',
+  woodDark: '#a06235',
+  roofSnow: '#f0f4f8',
+  gold:     '#e8b44b',
+  goldDark: '#c98d28',
+  goldLight:'#f5d08c',
+  charA:    '#4a90c4',
+  charB:    '#e0736a',
+  textBrown:'#5c3d2e',
+  dialogBg: '#fff8e7',
+  dialogBorder:'#d4845a',
+  cabinLight:'#ffe8a0',
+  fire:     '#f08040',
+};
+
+// ── Canvas Setup ──
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let scale = SCALE;
+
+function resize() {
+  const maxW = window.innerWidth;
+  const maxH = window.innerHeight;
+  scale = Math.min(Math.floor(maxW / W), Math.floor(maxH / H), 3);
+  canvas.width = W * scale;
+  canvas.height = H * scale;
+  ctx.imageSmoothingEnabled = false;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── Double Buffer ──
+const buf = document.createElement('canvas');
+buf.width = W; buf.height = H;
+const btx = buf.getContext('2d');
+btx.imageSmoothingEnabled = false;
+
+function flip() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(buf, 0, 0, W, H, 0, 0, W * scale, H * scale);
+}
+
+// ── Pixel Drawing Utils ──
+function px(x, y, w, h, color) {
+  btx.fillStyle = color;
+  btx.fillRect(Math.floor(x), Math.floor(y), w || 1, h || 1);
+}
+
+function pxRect(x, y, w, h, color) {
+  btx.fillStyle = color;
+  btx.fillRect(Math.floor(x), Math.floor(y), w, h);
+}
+
+function pxLine(x1, y1, x2, y2, color) {
+  btx.strokeStyle = color;
+  btx.lineWidth = 1;
+  btx.beginPath();
+  btx.moveTo(Math.floor(x1) + 0.5, Math.floor(y1) + 0.5);
+  btx.lineTo(Math.floor(x2) + 0.5, Math.floor(y2) + 0.5);
+  btx.stroke();
+}
+
+function pxCircle(cx, cy, r, color) {
+  btx.fillStyle = color;
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++) {
+      if (dx * dx + dy * dy <= r * r) {
+        btx.fillRect(Math.floor(cx + dx), Math.floor(cy + dy), 1, 1);
+      }
+    }
+  }
+}
+
+function drawTree(x, y, h) {
+  const w = Math.floor(h * 0.6);
+  pxRect(x - 2, y - Math.floor(h * 0.3), 4, Math.floor(h * 0.3), COLORS.woodDark);
+  for (let row = 0; row < 5; row++) {
+    const rowW = w - row * 4;
+    const rowH = Math.floor(h / 6);
+    const rowY = y - Math.floor(h * 0.3) - (row + 1) * rowH;
+    pxRect(x - Math.floor(rowW / 2), rowY, rowW, rowH, row % 2 ? COLORS.treeDark : COLORS.treeGreen);
+  }
+  pxRect(x - 3, y - h - 1, 6, 3, COLORS.snow);
+}
+
+function drawSnowman(x, y) {
+  pxCircle(x, y - 3, 6, COLORS.snow);
+  pxCircle(x, y - 10, 5, COLORS.snow);
+  pxCircle(x, y - 15, 4, COLORS.snow);
+  px(x - 2, y - 16, 1, 1, '#222');
+  px(x + 1, y - 16, 1, 1, '#222');
+  px(x, y - 14, 1, 1, '#f08040');
+  px(x + 1, y - 14, 1, 1, '#f08040');
+}
+
+function drawSnowGround(y, color) {
+  pxRect(0, y, W, H - y, color || COLORS.snow);
+  for (let i = 0; i < 60; i++) {
+    const sx = (i * 37 + 13) % W;
+    const sy = y + 2 + (i * 19) % (H - y - 4);
+    px(sx, sy, 1, 1, COLORS.snowShadow);
+  }
+}
+
+function drawCharacter(x, y, coatColor) {
+  pxRect(x + 2, y + 12, 2, 6, '#3a3a3a');
+  pxRect(x + 8, y + 12, 2, 6, '#3a3a3a');
+  pxRect(x + 1, y + 4, 10, 10, coatColor);
+  pxRect(x + 1, y + 10, 10, 2, '#3a3a3a');
+  pxRect(x + 3, y - 4, 6, 7, '#f5d0b0');
+  pxRect(x + 2, y - 6, 8, 3, '#3a3a3a');
+  px(x + 5, y - 2, 1, 1, '#222');
+  px(x + 8, y - 2, 1, 1, '#222');
+  pxRect(x + 1, y + 1, 10, 2, '#e0736a');
+}
+
+function drawPixelHeart(cx, cy, size, color) {
+  const pattern = [
+    [0,1,1,0,0,1,1,0],
+    [1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,0,1,1,0,0,0],
+  ];
+  for (let row = 0; row < pattern.length; row++) {
+    for (let col = 0; col < pattern[row].length; col++) {
+      if (pattern[row][col]) {
+        btx.fillStyle = color;
+        btx.fillRect(cx + col * 2, cy + row * 2, 2, 2);
+      }
+    }
+  }
+}
+
+// ── Particle System (Snow) ──
+let snowParticles = [];
+const SNOW_COUNT = 80;
+
+function initSnow() {
+  snowParticles = [];
+  for (let i = 0; i < SNOW_COUNT; i++) {
+    snowParticles.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      speed: 8 + Math.random() * 25,
+      size: 1 + Math.floor(Math.random() * 2),
+      wobble: Math.random() * Math.PI * 2,
+      wobbleSpeed: (Math.random() - 0.5) * 2,
+    });
+  }
+}
+
+function updateSnow(dt) {
+  for (const p of snowParticles) {
+    p.y += p.speed * dt;
+    p.wobble += p.wobbleSpeed * dt;
+    p.x += Math.sin(p.wobble) * 3 * dt;
+    if (p.y > H + 4) {
+      p.y = -4;
+      p.x = Math.random() * W;
+    }
+    if (p.x < -4) p.x = W + 4;
+    if (p.x > W + 4) p.x = -4;
+  }
+}
+
+function renderSnow(ctx) {
+  for (const p of snowParticles) {
+    pxRect(p.x, p.y, p.size, p.size, COLORS.snow);
+  }
+}
+
+// ── Scene Manager ──
+let sceneIdx = 0;
+let sceneTimer = 0;
+let transitionAlpha = 0;
+let transitioning = false;
+let nextSceneQueued = false;
+const TOTAL_SCENES = 4;
+
+function goToScene(idx) {
+  if (transitioning) return;
+  transitioning = true;
+  nextSceneQueued = false;
+  window._targetScene = idx;
+}
+
+function finishTransition() {
+  if (window._targetScene !== undefined) {
+    sceneIdx = window._targetScene;
+    window._targetScene = undefined;
+  } else {
+    sceneIdx = Math.min(sceneIdx + 1, TOTAL_SCENES - 1);
+  }
+  sceneTimer = 0;
+  transitioning = false;
+  transitionAlpha = 0;
+  initSceneHotspots();
+}
+
+// ── Hotspot System ──
+let hotspots = [];
+
+function initSceneHotspots() {
+  hotspots = [];
+  switch (sceneIdx) {
+    case 0: if (typeof initScene0Hotspots === 'function') initScene0Hotspots(); break;
+    case 1: if (typeof initScene1Hotspots === 'function') initScene1Hotspots(); break;
+    case 2: if (typeof initScene2Hotspots === 'function') initScene2Hotspots(); break;
+    case 3: if (typeof initScene3Hotspots === 'function') initScene3Hotspots(); break;
+  }
+}
+
+function handleSceneClick(e) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = (e.clientX - rect.left) / scale;
+  const sy = (e.clientY - rect.top) / scale;
+
+  for (const hs of hotspots) {
+    if (sx >= hs.x && sx <= hs.x + hs.w && sy >= hs.y && sy <= hs.y + hs.h) {
+      hs.action();
+      return;
+    }
+  }
+}
+
+// ── Dialog System ──
+let dialogQueue = [];
+let dialogShowing = false;
+let dialogCallback = null;
+
+const dialogBox = document.getElementById('dialog-box');
+const dialogText = document.getElementById('dialog-text');
+const dialogHint = document.getElementById('dialog-hint');
+
+function showDialog(texts, cb) {
+  if (dialogShowing) return;
+  dialogQueue = Array.isArray(texts) ? [...texts] : [texts];
+  dialogCallback = cb || null;
+  dialogShowing = true;
+  showNextDialog();
+}
+
+function showNextDialog() {
+  if (dialogQueue.length === 0) {
+    hideDialog();
+    return;
+  }
+  const text = dialogQueue.shift();
+  dialogText.textContent = text;
+  dialogBox.classList.add('visible');
+  if (dialogQueue.length === 0) {
+    dialogHint.textContent = '点击任意处继续';
+  } else {
+    dialogHint.textContent = '点击继续...';
+  }
+}
+
+function hideDialog() {
+  dialogBox.classList.remove('visible');
+  dialogShowing = false;
+  if (dialogCallback) {
+    const cb = dialogCallback;
+    dialogCallback = null;
+    cb();
+  }
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'music-toggle') return;
+  if (titleShown) {
+    titleShown = false;
+    initSceneHotspots();
+    if (!musicOn && typeof startMusic === 'function') startMusic();
+    return;
+  }
+  if (dialogShowing) {
+    showNextDialog();
+    return;
+  }
+  if (transitioning) return;
+  handleSceneClick(e);
+});
+
+// ── Title Screen ──
+let titleShown = true;
+
+function renderTitle(ctx) {
+  for (let i = 0; i < H; i++) {
+    const t = i / H;
+    ctx.fillStyle = `rgb(${Math.floor(0xf0 + (0xe0-0xf0)*t)},${Math.floor(0xe0 + (0xc0-0xe0)*t)},${Math.floor(0xd0 + (0xa0-0xd0)*t)})`;
+    ctx.fillRect(0, i, W, 1);
+  }
+
+  ctx.fillStyle = COLORS.textBrown;
+  ctx.font = 'bold 16px "Courier New", monospace';
+  const title = '520 ❤';
+  const tw1 = ctx.measureText(title).width;
+  ctx.fillText(title, 240 - tw1 / 2, 100);
+
+  ctx.font = '10px "Courier New", monospace';
+  const subtitle = '一段像素旅程';
+  const tw2 = ctx.measureText(subtitle).width;
+  ctx.fillText(subtitle, 240 - tw2 / 2, 118);
+
+  drawPixelHeart(180, 80, 6, '#e0736a');
+  drawPixelHeart(300, 75, 5, '#f3a683');
+  drawPixelHeart(140, 90, 4, '#d4845a');
+
+  ctx.font = '8px "Courier New", monospace';
+  const hint = '点击任意处开始';
+  const tw3 = ctx.measureText(hint).width;
+  ctx.fillText(hint, 240 - tw3 / 2, 200);
+
+  for (let i = 0; i < 7; i++) {
+    drawTree(30 + i * 70, 230, 30 + i * 5);
+  }
+  drawSnowGround(230);
+}
+
+// ── Audio stubs (implemented in Phase 3) ──
+let musicOn = false;
+function toggleMusic() {
+  // Will be fully implemented in Phase 3
+  musicOn = !musicOn;
+  document.getElementById('music-toggle').textContent = musicOn ? '🎵 音乐开' : '🔇 音乐关';
+}
+window.toggleMusic = toggleMusic;
+
+// ── Scene render stubs (will be filled in Phase 2) ──
+function renderScene0(ctx) { drawSnowGround(180); }
+function renderScene1(ctx) { drawSnowGround(178); }
+function renderScene2(ctx) { drawSnowGround(170); }
+function renderScene3(ctx) { drawSnowGround(175); }
+
+// ── Game Loop ──
+let lastTime = 0;
+
+function update(dt) {
+  updateSnow(dt);
+  sceneTimer += dt;
+
+  if (sceneIdx === 2 && typeof updateScene2 === 'function') {
+    updateScene2(dt);
+  }
+  if (sceneIdx === 3 && typeof updateScene3 === 'function') {
+    updateScene3(dt);
+  }
+
+  if (transitioning) {
+    transitionAlpha = Math.min(transitionAlpha + dt * 2.5, 1);
+    if (transitionAlpha >= 1 && !nextSceneQueued) {
+      nextSceneQueued = true;
+      finishTransition();
+    }
+  } else if (transitionAlpha > 0) {
+    transitionAlpha = Math.max(transitionAlpha - dt * 2.5, 0);
+  }
+}
+
+function render(ctx) {
+  if (titleShown) {
+    renderTitle(ctx);
+    renderSnow(ctx);
+    return;
+  }
+
+  if (sceneIdx !== 3) {
+    for (let i = 0; i < H; i++) {
+      const t = i / H;
+      const r = Math.floor(0xb8 + (0x7e - 0xb8) * t);
+      const g = Math.floor(0xd4 + (0xb8 - 0xd4) * t);
+      const b = Math.floor(0xe3 + (0xda - 0xe3) * t);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(0, i, W, 1);
+    }
+  }
+
+  switch (sceneIdx) {
+    case 0: renderScene0(ctx); break;
+    case 1: renderScene1(ctx); break;
+    case 2: renderScene2(ctx); break;
+    case 3: renderScene3(ctx); break;
+  }
+
+  renderSnow(ctx);
+
+  if (transitionAlpha > 0) {
+    ctx.fillStyle = `rgba(0,0,0,${transitionAlpha})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+function gameLoop(ts) {
+  const dt = Math.min((ts - lastTime) / 1000, 0.1);
+  lastTime = ts;
+
+  update(dt);
+  render(btx);
+  flip();
+  requestAnimationFrame(gameLoop);
+}
+
+initSnow();
+requestAnimationFrame(gameLoop);
+console.log('Phase 1 initialized — ready for scene implementation');
+</script>
+</body>
+</html>
