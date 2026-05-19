@@ -374,7 +374,10 @@ function handleSceneClick(e) {
   const sx = (e.clientX - rect.left) / scale;
   const sy = (e.clientY - rect.top) / scale;
 
-  for (const hs of hotspots) {
+  // Sort by area ascending so smaller hotspots (windows, details)
+  // take priority over larger ones (cabin body).
+  const sorted = [...hotspots].sort((a, b) => (a.w * a.h) - (b.w * b.h));
+  for (const hs of sorted) {
     if (sx >= hs.x && sx <= hs.x + hs.w && sy >= hs.y && sy <= hs.y + hs.h) {
       hs.action();
       return;
@@ -749,7 +752,7 @@ function initScene2Hotspots() {
     { x: 250, y: 145, w: 30, h: 25, action: () => {
       showDialog(['金毛的耳朵飞起来了！', '它看起来比谁都开心 🐕'], null);
     }},
-    { x: 400, y: 80, w: 50, h: 50, action: () => {
+    { x: 400, y: 80, w: 50, h: 50, _tag: 'trailMarker', action: () => {
       showDialog(['穿过一片松林...', '前方有温暖的灯光 ✨'], () => {
         goToScene(3);
       });
@@ -759,6 +762,13 @@ function initScene2Hotspots() {
 
 function updateScene2(dt) {
   scrollOffset += 60 * dt;
+  // Keep trail marker hotspot aligned with the scrolling visual marker
+  const markerX = 420 - (scrollOffset * 0.5) % 500;
+  for (const hs of hotspots) {
+    if (hs._tag === 'trailMarker') {
+      hs.x = markerX > 300 ? markerX - 5 : -100;
+    }
+  }
 }
 
 function renderScene2(ctx) {
@@ -996,7 +1006,6 @@ function gameLoop(ts) {
 
 initSnow();
 requestAnimationFrame(gameLoop);
-console.log('Phase 1 initialized — ready for scene implementation');
 </script>
 </body>
 </html>
