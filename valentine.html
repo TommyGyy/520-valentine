@@ -589,7 +589,12 @@ window.toggleMusic = toggleMusic;
 
 // ── Sound Effects ──
 function playSFX(type) {
-  if (!audioCtx || !musicOn) return;
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
   const now = audioCtx.currentTime;
 
   if (type === 'click') {
@@ -681,6 +686,7 @@ function renderScene0(ctx) {
 function initScene1Hotspots() {
   hotspots = [
     { x: 220, y: 148, w: 40, h: 34, action: () => {
+      playSFX('bark');
       showDialog(['🐕 金毛：汪汪！', '金毛摇着尾巴，叼来一块滑雪板', '金毛：带我去滑雪吧！'], () => {
         goToScene(2);
       });
@@ -821,6 +827,7 @@ function initScene3Hotspots() {
       }
     }},
     { x: 275, y: 173, w: 32, h: 22, action: () => {
+      playSFX('bark');
       showDialog(['金毛翻了个身，惬意地打着呼噜 💤'], null);
     }},
     { x: 220, y: 135, w: 40, h: 30, action: () => {
