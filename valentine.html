@@ -41,7 +41,9 @@ const cv=document.getElementById('c');
 const cx=cv.getContext('2d');
 let sc=2;
 function rs(){
-  sc=Math.min(Math.floor(innerWidth/W),Math.floor(innerHeight/H),3);
+  let w=innerWidth||document.documentElement.clientWidth||480;
+  let h=innerHeight||document.documentElement.clientHeight||270;
+  sc=Math.max(1,Math.min(Math.floor(w/W),Math.floor(h/H),3));
   cv.width=W*sc;cv.height=H*sc;cx.imageSmoothingEnabled=false;
 }
 rs();addEventListener('resize',rs);
