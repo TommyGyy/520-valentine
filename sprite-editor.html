@@ -6,56 +6,54 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a1a;color:#ddd;font-family:monospace;display:flex;height:100vh}
-#panel{width:300px;padding:16px;overflow-y:auto;background:#2a2a2a;border-right:2px solid #444}
-#panel h3{color:#f0b860;margin-bottom:8px}
-.scene-btn{display:block;width:100%;padding:8px;margin:4px 0;background:#3a3a3a;border:1px solid #555;color:#ddd;cursor:pointer;text-align:left;font-family:monospace}
+#panel{width:310px;padding:12px;overflow-y:auto;background:#2a2a2a;border-right:2px solid #444;display:flex;flex-direction:column;gap:6px}
+#panel h3{color:#f0b860}
+.scene-btn{display:block;width:100%;padding:8px;background:#3a3a3a;border:1px solid #555;color:#ddd;cursor:pointer;text-align:left;font-family:monospace;font-size:12px}
 .scene-btn.active{background:#5a4030;border-color:#f0b860}
-.sp{background:#333;border-radius:4px;padding:8px;margin:6px 0}
+.sp{background:#333;border-radius:4px;padding:8px}
 .sp.sel{border:1px solid #f0b860;background:#3a3028}
-.sp .name{font-size:12px;font-weight:bold;margin-bottom:4px}
-.sp .row{display:flex;gap:4px;align-items:center;margin:2px 0}
-.sp .row label{font-size:10px;color:#aaa;width:16px;text-align:right}
-.sp input[type=number]{width:58px;background:#444;border:1px solid #666;color:#fff;padding:2px 4px;font-family:monospace;font-size:11px}
-.sp input[type=checkbox]{margin-right:4px}
-.sp .anim{background:#2a2a2a;padding:6px;margin-top:6px;border-radius:3px}
-.sp .anim .row label{width:28px}
-#controls{background:#333;padding:8px;margin:10px 0;border-radius:4px}
-#controls button{background:#5a4030;border:1px solid #f0b860;color:#fff;padding:6px 12px;cursor:pointer;font-family:monospace;margin:2px}
-#controls button:hover{background:#7a5040}
-#time-slider{width:100%;margin-top:6px}
+.sp .n{font-size:12px;font-weight:bold;margin-bottom:4px}
+.sp .r{display:flex;gap:4px;align-items:center;margin:2px 0}
+.sp .r label{font-size:10px;color:#aaa;width:16px;text-align:right}
+.sp input[type=number]{width:58px;background:#444;border:1px solid #666;color:#fff;padding:2px 4px;font-family:monospace;font-size:11px;outline:none}
+.sp input[type=number]:focus{border-color:#f0b860}
+.sp .anim{padding:6px;margin-top:4px;background:#2a2a2a;border-radius:3px}
+.sp .anim .r label{width:28px}
+#ctls{background:#333;padding:8px;border-radius:4px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+#ctls button{background:#5a4030;border:1px solid #f0b860;color:#fff;padding:6px 10px;cursor:pointer;font-family:monospace;font-size:11px}
+#ctls button:hover{background:#7a5040}
+#ctls button.save{background:#3a6030;border-color:#5a9040}
+#time-slider{width:100%}
 #canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
 canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid #555}
 #info{position:absolute;bottom:8px;left:8px;font-size:12px;color:#888;background:rgba(0,0,0,.7);padding:4px 8px;pointer-events:none}
-#help{position:absolute;top:8px;right:8px;font-size:11px;color:#888;background:rgba(0,0,0,.7);padding:4px 8px;pointer-events:none}
 </style>
 </head>
 <body>
 <div id="panel">
   <h3>精灵编辑器</h3>
-  <button class="scene-btn active" onclick="switchScene(0)">标题画面</button>
-  <button class="scene-btn" onclick="switchScene(1)">滑雪场景</button>
-  <button class="scene-btn" onclick="switchScene(2)">木屋场景</button>
-  <div id="controls">
-    <button onclick="togglePlay()" id="btn-play">▶ 播放动画</button>
+  <button class="scene-btn active" id="btn-sc0" onclick="switchScene(0)">标题画面</button>
+  <button class="scene-btn" id="btn-sc1" onclick="switchScene(1)">滑雪场景</button>
+  <button class="scene-btn" id="btn-sc2" onclick="switchScene(2)">木屋场景</button>
+  <div id="ctls">
+    <button id="btn-play" onclick="togglePlay()">▶ 播放</button>
     <button onclick="resetAnim()">↺ 重置</button>
-    <div class="row" style="margin-top:4px"><label style="font-size:10px;color:#aaa">时间: <span id="time-label">0.0s</span></label></div>
-    <input type="range" id="time-slider" min="0" max="1000" value="0" oninput="seekAnim(this.value)">
+    <button class="save" onclick="saveScene()">💾 保存</button>
+    <span style="font-size:10px;color:#888;margin-left:4px" id="time-label">0.0s</span>
+    <input type="range" id="time-slider" min="0" max="1000" value="0" oninput="seekAnim(this.value)" style="width:100%;margin-top:4px">
   </div>
   <div id="sprite-panel"></div>
-  <p style="font-size:10px;color:#888;margin-top:12px">拖拽精灵=移动<br>滚轮=缩放 | F键=翻转</p>
+  <p style="font-size:10px;color:#888">拖拽=移动 | 滚轮=缩放 | F=翻转 | 输入框直接编辑</p>
 </div>
 <div id="canvas-wrap">
   <canvas id="c"></canvas>
   <div id="info">点击精灵查看坐标</div>
-  <div id="help">拖拽=移动 | 滚轮=缩放 | F=翻转</div>
 </div>
 <script>
 const W=480,H=270;
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
-let scale=3;
-
-let curScene=0,selected=null,dragging=null,images={},dragOx=0,dragOy=0;
+let scale=3,curScene=0,selected=null,dragging=null,images={},dragOx=0,dragOy=0;
 let playing=false,animTime=0,lastFrame=0;
 
 const scenes=[
@@ -66,8 +64,8 @@ const scenes=[
 ]},
 {name:'滑雪',bg:'bg-ski.png',sprites:[
   {key:'boySki',src:'boy-ski.png',x:100,y:148,h:34,flip:false,anim:{enabled:true,startX:-60,endX:500,dur:10,loop:true}},
-  {key:'girlSki',src:'girl-ski.png',x:-20,y:148,h:34,flip:false,anim:{enabled:true,startX:-20,endX:500,dur:10,loop:true}},
-  {key:'dog',src:'dog.png',x:50,y:154,h:22,flip:false,anim:{enabled:true,startX:50,endX:500,dur:8,loop:true}},
+  {key:'girlSki',src:'girl-ski.png',x:130,y:148,h:34,flip:false,anim:{enabled:true,startX:-20,endX:500,dur:10,loop:true}},
+  {key:'dog',src:'dog.png',x:180,y:154,h:22,flip:false,anim:{enabled:true,startX:50,endX:500,dur:8,loop:true}},
 ]},
 {name:'木屋',bg:'bg-cabin.png',sprites:[
   {key:'boy',src:'boy-stand.png',x:80,y:162,h:34,flip:false,anim:{enabled:false,startX:80,endX:80,dur:5,loop:true}},
@@ -76,10 +74,9 @@ const scenes=[
 ]}];
 
 function resize(){
-  let maxW=innerWidth-320,maxH=innerHeight;
+  let maxW=innerWidth-330,maxH=innerHeight;
   scale=Math.min(Math.floor(maxW/W),Math.floor(maxH/H),4);
-  canvas.width=W*scale;canvas.height=H*scale;
-  ctx.imageSmoothingEnabled=false;
+  canvas.width=W*scale;canvas.height=H*scale;ctx.imageSmoothingEnabled=false;
 }
 resize();addEventListener('resize',resize);
 for(let sc of scenes){
@@ -87,9 +84,14 @@ for(let sc of scenes){
   for(let sp of sc.sprites){let img=new Image();img.src=sp.src;images[sp.src]=img}
 }
 
-function switchScene(i){curScene=i;document.querySelectorAll('.scene-btn').forEach((b,j)=>b.classList.toggle('active',j===i));selected=null;playing=false;animTime=0;renderPanel();updatePlayBtn()}
+function switchScene(i){
+  curScene=i;
+  document.querySelectorAll('.scene-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  selected=null;playing=false;animTime=0;updatePlayBtn();
+  buildPanel();
+}
 function togglePlay(){playing=!playing;if(playing)lastFrame=performance.now();updatePlayBtn()}
-function updatePlayBtn(){document.getElementById('btn-play').textContent=playing?'⏸ 暂停':'▶ 播放动画'}
+function updatePlayBtn(){document.getElementById('btn-play').textContent=playing?'⏸ 暂停':'▶ 播放'}
 function resetAnim(){animTime=0;playing=false;updatePlayBtn();document.getElementById('time-slider').value=0;document.getElementById('time-label').textContent='0.0s'}
 function seekAnim(v){animTime=+v/1000*getMaxDur();document.getElementById('time-label').textContent=animTime.toFixed(1)+'s'}
 function getMaxDur(){let max=5;for(let sp of scenes[curScene].sprites){let a=sp.anim;if(a.enabled){let d=a.loop?a.dur:a.dur*2;if(d>max)max=d}}return max}
@@ -107,26 +109,91 @@ function getSpriteX(sp,t){
   }
 }
 
-function renderPanel(){
-  let html='';let sps=scenes[curScene].sprites;
+// Build panel with real DOM nodes (not innerHTML) so inputs survive re-renders
+function buildPanel(){
+  let container=document.getElementById('sprite-panel');
+  container.innerHTML='';
+  let sps=scenes[curScene].sprites;
   for(let i=0;i<sps.length;i++){
-    let sp=sps[i],sel=i===selected?' sel':'';
-    let a=sp.anim;
-    html+=`<div class="sp${sel}" onclick="selectSprite(${i})">
-      <div class="name">${sp.key} <span style="color:#888;font-size:10px">${sp.src}</span></div>
-      <div class="row"><label>x</label><input type="number" value="${sp.x}" onchange="updateVal(${i},'x',this.value)"><label>y</label><input type="number" value="${sp.y}" onchange="updateVal(${i},'y',this.value)"><label>h</label><input type="number" value="${sp.h}" onchange="updateVal(${i},'h',this.value)"></div>
-      <div class="row"><input type="checkbox" id="flip${i}" ${sp.flip?'checked':''} onchange="updateVal(${i},'flip',this.checked)"><label for="flip${i}" style="width:auto">水平翻转</label></div>
-      <div class="anim"><div class="row"><input type="checkbox" id="ena${i}" ${a.enabled?'checked':''} onchange="updateAnim(${i},'enabled',this.checked)"><label for="ena${i}" style="width:auto;color:#f0b860">动画</label></div>
-      <div class="row"><label>起x</label><input type="number" value="${a.startX}" onchange="updateAnim(${i},'startX',+this.value)"><label>止x</label><input type="number" value="${a.endX}" onchange="updateAnim(${i},'endX',+this.value)"></div>
-      <div class="row"><label>时长</label><input type="number" value="${a.dur}" onchange="updateAnim(${i},'dur',+this.value)" step="0.5" min="1"><label>循环</label><input type="checkbox" ${a.loop?'checked':''} onchange="updateAnim(${i},'loop',this.checked)"></div></div>
-    </div>`;
+    let sp=sps[i],a=sp.anim;
+    let div=document.createElement('div');div.className='sp'+(i===selected?' sel':'');
+    div.addEventListener('mousedown',e=>{if(e.target.tagName!=='INPUT'&&e.target.tagName!=='LABEL'){selectSprite(i)}});
+
+    let name=document.createElement('div');name.className='n';name.textContent=sp.key+' ('+sp.src+')';div.appendChild(name);
+
+    // x, y, h row
+    let row1=document.createElement('div');row1.className='r';
+    let lx=document.createElement('label');lx.textContent='x';row1.appendChild(lx);
+    let ix=makeNumInput(sp.x,v=>{sp.x=v});
+    row1.appendChild(ix);
+    let ly=document.createElement('label');ly.textContent='y';row1.appendChild(ly);
+    let iy=makeNumInput(sp.y,v=>{sp.y=v});
+    row1.appendChild(iy);
+    let lh=document.createElement('label');lh.textContent='h';row1.appendChild(lh);
+    let ih=makeNumInput(sp.h,v=>{sp.h=Math.max(1,v)});
+    row1.appendChild(ih);
+    div.appendChild(row1);
+
+    // flip checkbox
+    let row2=document.createElement('div');row2.className='r';
+    let cf=document.createElement('input');cf.type='checkbox';cf.checked=sp.flip;
+    cf.addEventListener('change',()=>{sp.flip=cf.checked});
+    row2.appendChild(cf);
+    let lf=document.createElement('label');lf.textContent='水平翻转';lf.style.width='auto';
+    row2.appendChild(lf);
+    div.appendChild(row2);
+
+    // anim section
+    let animDiv=document.createElement('div');animDiv.className='anim';
+
+    let ra0=document.createElement('div');ra0.className='r';
+    let ce=document.createElement('input');ce.type='checkbox';ce.checked=a.enabled;
+    ce.addEventListener('change',()=>{a.enabled=ce.checked});
+    ra0.appendChild(ce);
+    let le=document.createElement('label');le.textContent='动画';le.style.width='auto';le.style.color='#f0b860';
+    ra0.appendChild(le);
+    animDiv.appendChild(ra0);
+
+    let ra1=document.createElement('div');ra1.className='r';
+    let l1=document.createElement('label');l1.textContent='起x';l1.style.width='28px';ra1.appendChild(l1);
+    let isx=makeNumInput(a.startX,v=>{a.startX=v});
+    ra1.appendChild(isx);
+    let l2=document.createElement('label');l2.textContent='止x';l2.style.width='28px';ra1.appendChild(l2);
+    let iex=makeNumInput(a.endX,v=>{a.endX=v});
+    ra1.appendChild(iex);
+    animDiv.appendChild(ra1);
+
+    let ra2=document.createElement('div');ra2.className='r';
+    let l3=document.createElement('label');l3.textContent='时长';l3.style.width='28px';ra2.appendChild(l3);
+    let idu=makeNumInput(a.dur,v=>{a.dur=Math.max(0.5,v)},'0.5');
+    idu.step='0.5';idu.min='0.5';
+    ra2.appendChild(idu);
+    let cl=document.createElement('input');cl.type='checkbox';cl.checked=a.loop;
+    cl.addEventListener('change',()=>{a.loop=cl.checked});
+    ra2.appendChild(cl);
+    let ll=document.createElement('label');ll.textContent='循环';ll.style.width='auto';
+    ra2.appendChild(ll);
+    animDiv.appendChild(ra2);
+
+    div.appendChild(animDiv);
+    container.appendChild(div);
   }
-  document.getElementById('sprite-panel').innerHTML=html;
 }
 
-function selectSprite(i){selected=i;renderPanel()}
-function updateVal(i,prop,val){scenes[curScene].sprites[i][prop]=typeof val==='boolean'?val:+val}
-function updateAnim(i,prop,val){scenes[curScene].sprites[i].anim[prop]=typeof val==='boolean'?val:+val;renderPanel()}
+function makeNumInput(val,onChange,step){
+  let inp=document.createElement('input');inp.type='number';inp.value=val;
+  if(step)inp.step=step;
+  inp.addEventListener('input',()=>{onChange(+inp.value)});
+  inp.addEventListener('mousedown',e=>{e.stopPropagation()});
+  return inp;
+}
+
+function selectSprite(i){selected=i;buildPanel()}
+
+function updateSelectedClass(){
+  let items=document.getElementById('sprite-panel').children;
+  for(let j=0;j<items.length;j++)items[j].classList.toggle('sel',j===selected);
+}
 
 function getClickSprite(mx,my){
   let sps=scenes[curScene].sprites;
@@ -144,23 +211,23 @@ canvas.addEventListener('mousedown',e=>{
   let mx=(e.clientX-rect.left)/scale,my=(e.clientY-rect.top)/scale;
   let idx=getClickSprite(mx,my);
   if(idx!==null){
-    selected=idx;dragging=idx;
+    selected=idx;dragging=idx;updateSelectedClass();
     let sp=scenes[curScene].sprites[idx];
     let cx=playing?getSpriteX(sp,animTime):sp.x;
     dragOx=mx-cx;dragOy=my-sp.y;
-    renderPanel();
-  }else{selected=null;renderPanel()}
+  }else{selected=null;updateSelectedClass()}
 });
 canvas.addEventListener('mousemove',e=>{
   let rect=canvas.getBoundingClientRect();
   let mx=(e.clientX-rect.left)/scale,my=(e.clientY-rect.top)/scale;
   if(dragging!==null){
     let sp=scenes[curScene].sprites[dragging];
-    if(playing){sp.anim.startX+=(mx-sp.x-dragOx);sp.anim.endX+=(mx-sp.x-dragOx)}
-    sp.x=Math.round(mx-dragOx);sp.y=Math.round(my-dragOy);
-    renderPanel();
+    let newX=Math.round(mx-dragOx);
+    if(playing){let dx=newX-sp.x;sp.anim.startX+=dx;sp.anim.endX+=dx}
+    sp.x=newX;sp.y=Math.round(my-dragOy);
+    syncInputs();
   }
-  document.getElementById('info').textContent=`鼠标: (${Math.round(mx)}, ${Math.round(my)})`;
+  document.getElementById('info').textContent='鼠标: ('+Math.round(mx)+', '+Math.round(my)+')';
 });
 canvas.addEventListener('mouseup',()=>{dragging=null});
 canvas.addEventListener('wheel',e=>{
@@ -171,17 +238,44 @@ canvas.addEventListener('wheel',e=>{
   if(idx!==null){
     let sp=scenes[curScene].sprites[idx];
     sp.h=Math.max(4,sp.h+(e.deltaY>0?-2:2));sp.h=Math.round(sp.h);
-    renderPanel();
+    syncInputs();
   }
 },{passive:false});
 addEventListener('keydown',e=>{
   if(e.key==='f'||e.key==='F'){
     if(selected!==null){
       let sp=scenes[curScene].sprites[selected];
-      sp.flip=!sp.flip;renderPanel();
+      sp.flip=!sp.flip;syncInputs();
     }
   }
 });
+
+function syncInputs(){
+  let container=document.getElementById('sprite-panel');
+  let sps=scenes[curScene].sprites;
+  let items=container.children;
+  for(let i=0;i<items.length&&i<sps.length;i++){
+    let sp=sps[i],a=sp.anim;
+    let inps=items[i].querySelectorAll('input');
+    if(inps.length>=3){inps[0].value=sp.x;inps[1].value=sp.y;inps[2].value=sp.h}
+    if(inps.length>=4)inps[3].checked=sp.flip;
+    if(inps.length>=5)inps[4].checked=a.enabled;
+    if(inps.length>=7){inps[5].value=a.startX;inps[6].value=a.endX}
+    if(inps.length>=9){inps[7].value=a.dur;inps[8].checked=a.loop}
+  }
+}
+
+function saveScene(){
+  let sc=scenes[curScene];
+  let data={scene:sc.name,sprites:sc.sprites.map(sp=>({
+    key:sp.key,src:sp.src,x:sp.x,y:sp.y,h:sp.h,flip:sp.flip,
+    anim:{enabled:sp.anim.enabled,startX:sp.anim.startX,endX:sp.anim.endX,dur:sp.anim.dur,loop:sp.anim.loop}
+  }))};
+  let json=JSON.stringify(data,null,2);
+  // Copy to clipboard
+  navigator.clipboard.writeText(json).then(()=>alert('已复制到剪贴板!')).catch(()=>alert(json));
+  console.log(json);
+}
 
 function render(ts){
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -195,7 +289,6 @@ function render(ts){
   let sc=scenes[curScene];
   let bgImg=images[sc.bg];
   if(bgImg&&bgImg.complete)ctx.drawImage(bgImg,0,0,W*scale,H*scale);
-
   for(let i=0;i<sc.sprites.length;i++){
     let sp=sc.sprites[i];let img=images[sp.src];
     if(!img||!img.complete)continue;
@@ -216,7 +309,7 @@ function render(ts){
   requestAnimationFrame(render);
 }
 
-renderPanel();
+buildPanel();
 requestAnimationFrame(render);
 </script>
 </body>
