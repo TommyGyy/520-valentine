@@ -6,7 +6,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a1a;color:#ddd;font-family:monospace;display:flex;height:100vh}
-#panel{width:310px;padding:12px;overflow-y:auto;background:#2a2a2a;border-right:2px solid #444;display:flex;flex-direction:column;gap:6px}
+#panel{width:320px;padding:12px;overflow-y:auto;background:#2a2a2a;border-right:2px solid #444;display:flex;flex-direction:column;gap:6px}
 #panel h3{color:#f0b860}
 .scene-btn{display:block;width:100%;padding:8px;background:#3a3a3a;border:1px solid #555;color:#ddd;cursor:pointer;text-align:left;font-family:monospace;font-size:12px}
 .scene-btn.active{background:#5a4030;border-color:#f0b860}
@@ -14,15 +14,20 @@ body{background:#1a1a1a;color:#ddd;font-family:monospace;display:flex;height:100
 .sp.sel{border:1px solid #f0b860;background:#3a3028}
 .sp .n{font-size:12px;font-weight:bold;margin-bottom:4px}
 .sp .r{display:flex;gap:4px;align-items:center;margin:2px 0}
-.sp .r label{font-size:10px;color:#aaa;width:16px;text-align:right}
-.sp input[type=number]{width:58px;background:#444;border:1px solid #666;color:#fff;padding:2px 4px;font-family:monospace;font-size:11px;outline:none}
+.sp input[type=number]{width:56px;background:#444;border:1px solid #666;color:#fff;padding:2px 4px;font-family:monospace;font-size:11px;outline:none}
 .sp input[type=number]:focus{border-color:#f0b860}
 .sp .anim{padding:6px;margin-top:4px;background:#2a2a2a;border-radius:3px}
-.sp .anim .r label{width:28px}
+.sp .anim .r label{font-size:10px}
+.sp .path-pts{margin-top:4px;font-size:10px;color:#aaa}
+.sp .path-pts span{display:inline-block;background:#444;padding:2px 6px;margin:1px;border-radius:2px;cursor:pointer}
+.sp .path-pts span.sel{background:#f0b860;color:#222}
+.sp button{background:#444;border:1px solid #666;color:#ddd;padding:3px 8px;cursor:pointer;font-family:monospace;font-size:10px;margin:2px}
+.sp button:hover{background:#555}
 #ctls{background:#333;padding:8px;border-radius:4px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 #ctls button{background:#5a4030;border:1px solid #f0b860;color:#fff;padding:6px 10px;cursor:pointer;font-family:monospace;font-size:11px}
 #ctls button:hover{background:#7a5040}
 #ctls button.save{background:#3a6030;border-color:#5a9040}
+#ctls button.active{border-color:#ff0;background:#6a5040}
 #time-slider{width:100%}
 #canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
 canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid #555}
@@ -39,11 +44,11 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid #5
     <button id="btn-play" onclick="togglePlay()">▶ 播放</button>
     <button onclick="resetAnim()">↺ 重置</button>
     <button class="save" onclick="saveScene()">💾 保存</button>
-    <span style="font-size:10px;color:#888;margin-left:4px" id="time-label">0.0s</span>
+    <span style="font-size:10px;color:#888" id="time-label">0.0s</span>
     <input type="range" id="time-slider" min="0" max="1000" value="0" oninput="seekAnim(this.value)" style="width:100%;margin-top:4px">
   </div>
   <div id="sprite-panel"></div>
-  <p style="font-size:10px;color:#888">拖拽=移动 | 滚轮=缩放 | F=翻转 | 输入框直接编辑</p>
+  <p style="font-size:10px;color:#888">拖拽=移动 | 滚轮=缩放 | F=翻转<br>Shift+点击画布=添加路径点 | 右键点=删除<br>拖拽路径点移动 | 路径自动循环</p>
 </div>
 <div id="canvas-wrap">
   <canvas id="c"></canvas>
@@ -53,28 +58,33 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid #5
 const W=480,H=270;
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
-let scale=3,curScene=0,selected=null,dragging=null,images={},dragOx=0,dragOy=0;
+let scale=3,curScene=0,selected=null,dragging=null,dragPt=-1,images={},dragOx=0,dragOy=0;
 let playing=false,animTime=0,lastFrame=0;
+
+// Default paths for skiing scene
+const skiPathBoy=[{x:-60,y:160},{x:80,y:152},{x:200,y:140},{x:340,y:135},{x:500,y:145}];
+const skiPathGirl=[{x:-30,y:155},{x:100,y:148},{x:230,y:135},{x:360,y:130},{x:500,y:142}];
+const skiPathDog=[{x:20,y:165},{x:140,y:158},{x:280,y:148},{x:420,y:145},{x:500,y:155}];
 
 const scenes=[
 {name:'标题',bg:'bg-title.png',sprites:[
-  {key:'boy',src:'boy-stand.png',x:175,y:190,h:36,flip:false,anim:{enabled:false,startX:175,endX:175,dur:5,loop:true}},
-  {key:'girl',src:'girl-stand.png',x:210,y:190,h:36,flip:false,anim:{enabled:false,startX:210,endX:210,dur:5,loop:true}},
-  {key:'dog',src:'dog.png',x:250,y:200,h:22,flip:false,anim:{enabled:false,startX:250,endX:250,dur:5,loop:true}},
+  {key:'boy',src:'boy-stand.png',x:175,y:190,h:36,flip:false,anim:{enabled:false,dur:5,loop:true,path:[{x:175,y:190}]}},
+  {key:'girl',src:'girl-stand.png',x:210,y:190,h:36,flip:false,anim:{enabled:false,dur:5,loop:true,path:[{x:210,y:190}]}},
+  {key:'dog',src:'dog.png',x:250,y:200,h:22,flip:false,anim:{enabled:false,dur:5,loop:true,path:[{x:250,y:200}]}},
 ]},
 {name:'滑雪',bg:'bg-ski.png',sprites:[
-  {key:'boySki',src:'boy-ski.png',x:100,y:148,h:34,flip:false,anim:{enabled:true,startX:-60,endX:500,dur:10,loop:true}},
-  {key:'girlSki',src:'girl-ski.png',x:130,y:148,h:34,flip:false,anim:{enabled:true,startX:-20,endX:500,dur:10,loop:true}},
-  {key:'dog',src:'dog.png',x:180,y:154,h:22,flip:false,anim:{enabled:true,startX:50,endX:500,dur:8,loop:true}},
+  {key:'boySki',src:'boy-ski.png',x:100,y:148,h:34,flip:false,anim:{enabled:true,dur:10,loop:true,path:JSON.parse(JSON.stringify(skiPathBoy))}},
+  {key:'girlSki',src:'girl-ski.png',x:130,y:148,h:34,flip:false,anim:{enabled:true,dur:10,loop:true,path:JSON.parse(JSON.stringify(skiPathGirl))}},
+  {key:'dog',src:'dog.png',x:180,y:154,h:22,flip:false,anim:{enabled:true,dur:8,loop:true,path:JSON.parse(JSON.stringify(skiPathDog))}},
 ]},
 {name:'木屋',bg:'bg-cabin.png',sprites:[
-  {key:'boy',src:'boy-stand.png',x:80,y:162,h:34,flip:false,anim:{enabled:false,startX:80,endX:80,dur:5,loop:true}},
-  {key:'girl',src:'girl-stand.png',x:110,y:162,h:34,flip:false,anim:{enabled:false,startX:110,endX:110,dur:5,loop:true}},
-  {key:'dog',src:'dog.png',x:290,y:178,h:22,flip:false,anim:{enabled:false,startX:290,endX:290,dur:5,loop:true}},
+  {key:'boy',src:'boy-stand.png',x:80,y:162,h:34,flip:false,anim:{enabled:false,dur:5,loop:true,path:[{x:80,y:162}]}},
+  {key:'girl',src:'girl-stand.png',x:110,y:162,h:34,flip:false,anim:{enabled:false,dur:5,loop:true,path:[{x:110,y:162}]}},
+  {key:'dog',src:'dog.png',x:290,y:178,h:22,flip:false,anim:{enabled:false,dur:5,loop:true,path:[{x:290,y:178}]}},
 ]}];
 
 function resize(){
-  let maxW=innerWidth-330,maxH=innerHeight;
+  let maxW=innerWidth-340,maxH=innerHeight;
   scale=Math.min(Math.floor(maxW/W),Math.floor(maxH/H),4);
   canvas.width=W*scale;canvas.height=H*scale;ctx.imageSmoothingEnabled=false;
 }
@@ -85,232 +95,275 @@ for(let sc of scenes){
 }
 
 function switchScene(i){
-  curScene=i;
-  document.querySelectorAll('.scene-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
-  selected=null;playing=false;animTime=0;updatePlayBtn();
-  buildPanel();
+  curScene=i;document.querySelectorAll('.scene-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  selected=null;dragPt=-1;playing=false;animTime=0;updatePlayBtn();buildPanel();
 }
 function togglePlay(){playing=!playing;if(playing)lastFrame=performance.now();updatePlayBtn()}
 function updatePlayBtn(){document.getElementById('btn-play').textContent=playing?'⏸ 暂停':'▶ 播放'}
 function resetAnim(){animTime=0;playing=false;updatePlayBtn();document.getElementById('time-slider').value=0;document.getElementById('time-label').textContent='0.0s'}
 function seekAnim(v){animTime=+v/1000*getMaxDur();document.getElementById('time-label').textContent=animTime.toFixed(1)+'s'}
-function getMaxDur(){let max=5;for(let sp of scenes[curScene].sprites){let a=sp.anim;if(a.enabled){let d=a.loop?a.dur:a.dur*2;if(d>max)max=d}}return max}
+function getMaxDur(){let max=5;for(let sp of scenes[curScene].sprites){if(sp.anim.enabled&&sp.anim.dur>max)max=sp.anim.dur}return max}
 
-function getSpriteX(sp,t){
-  let a=sp.anim;
-  if(!a.enabled||!playing)return sp.x;
-  let dur=a.dur;
-  if(a.loop){
-    let p=((t%dur)+dur)%dur/dur;
-    return a.startX+(a.endX-a.startX)*p;
-  }else{
-    let p=Math.min(1,Math.max(0,t/dur));
-    return a.startX+(a.endX-a.startX)*p;
+// Path interpolation: get position at normalized time t (0-1)
+function pathPos(path,t){
+  if(!path||path.length<2)return path&&path[0]?{x:path[0].x,y:path[0].y}:{x:0,y:0};
+  // Total path length
+  let segs=[];
+  let total=0;
+  for(let i=1;i<path.length;i++){
+    let dx=path[i].x-path[i-1].x,dy=path[i].y-path[i-1].y;
+    let len=Math.sqrt(dx*dx+dy*dy);segs.push({len,start:path[i-1],end:path[i]});total+=len;
   }
+  if(total===0)return{x:path[0].x,y:path[0].y};
+  let target=t*total;
+  let acc=0;
+  for(let s of segs){
+    if(acc+s.len>=target||s===segs[segs.length-1]){
+      let st=(target-acc)/s.len;
+      if(st<0)st=0;if(st>1)st=1;
+      return{x:s.start.x+(s.end.x-s.start.x)*st,y:s.start.y+(s.end.y-s.start.y)*st};
+    }
+    acc+=s.len;
+  }
+  return{x:path[path.length-1].x,y:path[path.length-1].y};
 }
 
-// Build panel with real DOM nodes (not innerHTML) so inputs survive re-renders
+function getSpritePos(sp,t){
+  let a=sp.anim;
+  if(!a.enabled||!playing)return{x:sp.x,y:sp.y};
+  let dur=a.dur;
+  if(a.loop){return pathPos(a.path,((t%dur)+dur)%dur/dur)}
+  else{return pathPos(a.path,Math.min(1,Math.max(0,t/dur)))}
+}
+
 function buildPanel(){
-  let container=document.getElementById('sprite-panel');
-  container.innerHTML='';
+  let container=document.getElementById('sprite-panel');container.innerHTML='';
   let sps=scenes[curScene].sprites;
   for(let i=0;i<sps.length;i++){
     let sp=sps[i],a=sp.anim;
     let div=document.createElement('div');div.className='sp'+(i===selected?' sel':'');
-    div.addEventListener('mousedown',e=>{if(e.target.tagName!=='INPUT'&&e.target.tagName!=='LABEL'){selectSprite(i)}});
+    div.addEventListener('mousedown',e=>{if(e.target.tagName!=='INPUT'&&e.target.tagName!=='LABEL'&&e.target.tagName!=='BUTTON')selectSprite(i)});
 
     let name=document.createElement('div');name.className='n';name.textContent=sp.key+' ('+sp.src+')';div.appendChild(name);
-
-    // x, y, h row
-    let row1=document.createElement('div');row1.className='r';
-    let lx=document.createElement('label');lx.textContent='x';row1.appendChild(lx);
-    let ix=makeNumInput(sp.x,v=>{sp.x=v});
-    row1.appendChild(ix);
-    let ly=document.createElement('label');ly.textContent='y';row1.appendChild(ly);
-    let iy=makeNumInput(sp.y,v=>{sp.y=v});
-    row1.appendChild(iy);
-    let lh=document.createElement('label');lh.textContent='h';row1.appendChild(lh);
-    let ih=makeNumInput(sp.h,v=>{sp.h=Math.max(1,v)});
-    row1.appendChild(ih);
-    div.appendChild(row1);
-
-    // flip checkbox
-    let row2=document.createElement('div');row2.className='r';
-    let cf=document.createElement('input');cf.type='checkbox';cf.checked=sp.flip;
-    cf.addEventListener('change',()=>{sp.flip=cf.checked});
-    row2.appendChild(cf);
-    let lf=document.createElement('label');lf.textContent='水平翻转';lf.style.width='auto';
-    row2.appendChild(lf);
-    div.appendChild(row2);
-
-    // anim section
-    let animDiv=document.createElement('div');animDiv.className='anim';
-
-    let ra0=document.createElement('div');ra0.className='r';
-    let ce=document.createElement('input');ce.type='checkbox';ce.checked=a.enabled;
-    ce.addEventListener('change',()=>{a.enabled=ce.checked});
-    ra0.appendChild(ce);
-    let le=document.createElement('label');le.textContent='动画';le.style.width='auto';le.style.color='#f0b860';
-    ra0.appendChild(le);
-    animDiv.appendChild(ra0);
-
-    let ra1=document.createElement('div');ra1.className='r';
-    let l1=document.createElement('label');l1.textContent='起x';l1.style.width='28px';ra1.appendChild(l1);
-    let isx=makeNumInput(a.startX,v=>{a.startX=v});
-    ra1.appendChild(isx);
-    let l2=document.createElement('label');l2.textContent='止x';l2.style.width='28px';ra1.appendChild(l2);
-    let iex=makeNumInput(a.endX,v=>{a.endX=v});
-    ra1.appendChild(iex);
-    animDiv.appendChild(ra1);
-
-    let ra2=document.createElement('div');ra2.className='r';
-    let l3=document.createElement('label');l3.textContent='时长';l3.style.width='28px';ra2.appendChild(l3);
-    let idu=makeNumInput(a.dur,v=>{a.dur=Math.max(0.5,v)},'0.5');
-    idu.step='0.5';idu.min='0.5';
-    ra2.appendChild(idu);
-    let cl=document.createElement('input');cl.type='checkbox';cl.checked=a.loop;
-    cl.addEventListener('change',()=>{a.loop=cl.checked});
-    ra2.appendChild(cl);
-    let ll=document.createElement('label');ll.textContent='循环';ll.style.width='auto';
-    ra2.appendChild(ll);
-    animDiv.appendChild(ra2);
-
-    div.appendChild(animDiv);
+    // x,y,h
+    let r1=document.createElement('div');r1.className='r';
+    appendLabel(r1,'x');appendNum(r1,sp.x,v=>sp.x=v);appendLabel(r1,'y');appendNum(r1,sp.y,v=>sp.y=v);appendLabel(r1,'h');appendNum(r1,sp.h,v=>sp.h=Math.max(1,v));div.appendChild(r1);
+    // flip
+    let r2=document.createElement('div');r2.className='r';
+    appendCB(r2,sp.flip,v=>sp.flip=v,'水平翻转');div.appendChild(r2);
+    // anim
+    let ad=document.createElement('div');ad.className='anim';
+    let r3=document.createElement('div');r3.className='r';
+    appendCB(r3,a.enabled,v=>a.enabled=v,'动画');ad.appendChild(r3);
+    let r4=document.createElement('div');r4.className='r';
+    appendLabel(r4,'时长','28px');appendNum(r4,a.dur,v=>a.dur=Math.max(0.5,v),'0.5',56);appendCB(r4,a.loop,v=>a.loop=v,'循环');ad.appendChild(r4);
+    // Path points
+    let ptsDiv=document.createElement('div');ptsDiv.className='path-pts';
+    ptsDiv.textContent='路径: ';
+    for(let j=0;j<a.path.length;j++){
+      let pt=a.path[j];
+      let s=document.createElement('span');
+      s.textContent=Math.round(pt.x)+','+Math.round(pt.y);
+      if(j===dragPt&&i===selected)s.className='sel';
+      s.addEventListener('mousedown',ee=>{ee.stopPropagation();dragPt=j;selectSprite(i);updateSelectedClass();renderPathLabels()});
+      ptsDiv.appendChild(s);
+    }
+    let btnAdd=document.createElement('button');btnAdd.textContent='+点';
+    btnAdd.addEventListener('mousedown',ee=>{ee.stopPropagation();selectSprite(i);updateSelectedClass()});
+    btnAdd.addEventListener('click',ee=>{ee.stopPropagation();addPathMode=true;document.getElementById('info').textContent='Shift+点击画布添加路径点'});
+    ptsDiv.appendChild(btnAdd);
+    let btnDel=document.createElement('button');btnDel.textContent='-点';
+    btnDel.addEventListener('mousedown',ee=>{ee.stopPropagation()});
+    btnDel.addEventListener('click',ee=>{ee.stopPropagation();if(selected===i&&dragPt>=0&&a.path.length>1){a.path.splice(dragPt,1);dragPt=-1;buildPanel()}else if(selected===i&&a.path.length>1){a.path.pop();buildPanel()}});
+    ptsDiv.appendChild(btnDel);
+    ad.appendChild(ptsDiv);div.appendChild(ad);
     container.appendChild(div);
   }
 }
 
-function makeNumInput(val,onChange,step){
-  let inp=document.createElement('input');inp.type='number';inp.value=val;
-  if(step)inp.step=step;
-  inp.addEventListener('input',()=>{onChange(+inp.value)});
-  inp.addEventListener('mousedown',e=>{e.stopPropagation()});
-  return inp;
+function renderPathLabels(){
+  let container=document.getElementById('sprite-panel');
+  let sps=scenes[curScene].sprites;let items=container.children;
+  for(let i=0;i<items.length&&i<sps.length;i++){
+    let sp=sps[i],a=sp.anim;
+    let spans=items[i].querySelectorAll('.path-pts span');
+    for(let j=0;j<spans.length&&j<a.path.length;j++){
+      spans[j].textContent=Math.round(a.path[j].x)+','+Math.round(a.path[j].y);
+      spans[j].classList.toggle('sel',i===selected&&j===dragPt);
+    }
+  }
 }
 
-function selectSprite(i){selected=i;buildPanel()}
+let addPathMode=false;
+function appendLabel(row,t,w){let l=document.createElement('label');l.textContent=t;if(w)l.style.width=w;row.appendChild(l)}
+function appendNum(row,val,onC,step,w){
+  let inp=document.createElement('input');inp.type='number';inp.value=val;if(step)inp.step=step;if(w)inp.style.width=w+'px';
+  inp.addEventListener('input',()=>{onC(+inp.value);if(selected!==null)renderPathLabels()});
+  inp.addEventListener('mousedown',e=>e.stopPropagation());
+  row.appendChild(inp);
+}
+function appendCB(row,val,onC,label){
+  let cb=document.createElement('input');cb.type='checkbox';cb.checked=val;
+  cb.addEventListener('change',()=>onC(cb.checked));
+  cb.addEventListener('mousedown',e=>e.stopPropagation());
+  row.appendChild(cb);
+  let lb=document.createElement('label');lb.textContent=label;lb.style.width='auto';row.appendChild(lb);
+}
 
+function selectSprite(i){selected=i;dragPt=-1;addPathMode=false;buildPanel();updateSelectedClass()}
 function updateSelectedClass(){
   let items=document.getElementById('sprite-panel').children;
   for(let j=0;j<items.length;j++)items[j].classList.toggle('sel',j===selected);
 }
 
-function getClickSprite(mx,my){
+function hitSprite(mx,my){
   let sps=scenes[curScene].sprites;
   for(let i=sps.length-1;i>=0;i--){
     let sp=sps[i];let img=images[sp.src];if(!img)continue;
-    let cx=playing?getSpriteX(sp,animTime):sp.x;
+    let pos=playing?getSpritePos(sp,animTime):{x:sp.x,y:sp.y};
     let w=sp.h*img.width/img.height;
-    if(mx>=cx&&mx<=cx+w&&my>=sp.y&&my<=sp.y+sp.h)return i;
+    if(mx>=pos.x&&mx<=pos.x+w&&my>=pos.y&&my<=pos.y+sp.h)return i;
   }
   return null;
+}
+function hitPathPoint(mx,my,si){
+  let sp=scenes[curScene].sprites[si],a=sp.anim;
+  for(let j=0;j<a.path.length;j++){
+    let p=a.path[j];
+    if(Math.abs(mx-p.x)<6&&Math.abs(my-p.y)<6)return j;
+  }
+  return -1;
 }
 
 canvas.addEventListener('mousedown',e=>{
   let rect=canvas.getBoundingClientRect();
   let mx=(e.clientX-rect.left)/scale,my=(e.clientY-rect.top)/scale;
-  let idx=getClickSprite(mx,my);
+  // Right click: delete path point
+  if(e.button===2&&selected!==null){
+    e.preventDefault();
+    let sp=scenes[curScene].sprites[selected];
+    let pi=hitPathPoint(mx,my,selected);
+    if(pi>=0&&sp.anim.path.length>1){sp.anim.path.splice(pi,1);dragPt=-1;buildPanel()}
+    return;
+  }
+  // Shift+click: add path point
+  if(e.shiftKey&&selected!==null){
+    let sp=scenes[curScene].sprites[selected];
+    sp.anim.path.push({x:Math.round(mx),y:Math.round(my)});
+    addPathMode=false;buildPanel();
+    document.getElementById('info').textContent='已添加路径点 ('+Math.round(mx)+','+Math.round(my)+')';
+    return;
+  }
+  // Check path point drag
+  if(selected!==null){
+    let pi=hitPathPoint(mx,my,selected);
+    if(pi>=0){dragPt=pi;dragging=null;buildPanel();return}
+  }
+  // Check sprite drag
+  let idx=hitSprite(mx,my);
   if(idx!==null){
-    selected=idx;dragging=idx;updateSelectedClass();
+    selected=idx;dragPt=-1;updateSelectedClass();
     let sp=scenes[curScene].sprites[idx];
-    let cx=playing?getSpriteX(sp,animTime):sp.x;
-    dragOx=mx-cx;dragOy=my-sp.y;
-  }else{selected=null;updateSelectedClass()}
+    let pos=playing?getSpritePos(sp,animTime):{x:sp.x,y:sp.y};
+    dragOx=mx-pos.x;dragOy=my-pos.y;dragging=idx;
+  }else{selected=null;dragPt=-1;updateSelectedClass()}
 });
 canvas.addEventListener('mousemove',e=>{
   let rect=canvas.getBoundingClientRect();
   let mx=(e.clientX-rect.left)/scale,my=(e.clientY-rect.top)/scale;
-  if(dragging!==null){
+  if(dragPt>=0&&selected!==null){
+    let sp=scenes[curScene].sprites[selected];
+    sp.anim.path[dragPt].x=Math.round(mx);sp.anim.path[dragPt].y=Math.round(my);
+    renderPathLabels();
+  }else if(dragging!==null){
     let sp=scenes[curScene].sprites[dragging];
-    let newX=Math.round(mx-dragOx);
-    if(playing){let dx=newX-sp.x;sp.anim.startX+=dx;sp.anim.endX+=dx}
-    sp.x=newX;sp.y=Math.round(my-dragOy);
-    syncInputs();
+    let newX=Math.round(mx-dragOx),newY=Math.round(my-dragOy);
+    if(playing){let dx=newX-sp.x,dy=newY-sp.y;for(let p of sp.anim.path){p.x+=dx;p.y+=dy}}
+    sp.x=newX;sp.y=newY;syncInputs();renderPathLabels();
   }
-  document.getElementById('info').textContent='鼠标: ('+Math.round(mx)+', '+Math.round(my)+')';
+  document.getElementById('info').textContent='鼠标: ('+Math.round(mx)+', '+Math.round(my)+')'+(selected!==null?' | 精灵: '+scenes[curScene].sprites[selected].key:'');
 });
-canvas.addEventListener('mouseup',()=>{dragging=null});
+canvas.addEventListener('mouseup',()=>{dragging=null;dragPt=-1;buildPanel()});
 canvas.addEventListener('wheel',e=>{
   e.preventDefault();
   let rect=canvas.getBoundingClientRect();
   let mx=(e.clientX-rect.left)/scale,my=(e.clientY-rect.top)/scale;
-  let idx=getClickSprite(mx,my);
+  let idx=hitSprite(mx,my);
   if(idx!==null){
     let sp=scenes[curScene].sprites[idx];
-    sp.h=Math.max(4,sp.h+(e.deltaY>0?-2:2));sp.h=Math.round(sp.h);
-    syncInputs();
+    sp.h=Math.max(4,sp.h+(e.deltaY>0?-2:2));sp.h=Math.round(sp.h);syncInputs();
   }
 },{passive:false});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('keydown',e=>{
   if(e.key==='f'||e.key==='F'){
-    if(selected!==null){
-      let sp=scenes[curScene].sprites[selected];
-      sp.flip=!sp.flip;syncInputs();
-    }
+    if(selected!==null){let sp=scenes[curScene].sprites[selected];sp.flip=!sp.flip;syncInputs()}
+  }
+  if(e.key==='Delete'&&selected!==null&&dragPt>=0){
+    let sp=scenes[curScene].sprites[selected];
+    if(sp.anim.path.length>1){sp.anim.path.splice(dragPt,1);dragPt=-1;buildPanel()}
   }
 });
 
 function syncInputs(){
-  let container=document.getElementById('sprite-panel');
-  let sps=scenes[curScene].sprites;
-  let items=container.children;
+  let container=document.getElementById('sprite-panel'),sps=scenes[curScene].sprites,items=container.children;
   for(let i=0;i<items.length&&i<sps.length;i++){
-    let sp=sps[i],a=sp.anim;
-    let inps=items[i].querySelectorAll('input');
+    let sp=sps[i],a=sp.anim,inps=items[i].querySelectorAll('input');
     if(inps.length>=3){inps[0].value=sp.x;inps[1].value=sp.y;inps[2].value=sp.h}
     if(inps.length>=4)inps[3].checked=sp.flip;
     if(inps.length>=5)inps[4].checked=a.enabled;
-    if(inps.length>=7){inps[5].value=a.startX;inps[6].value=a.endX}
-    if(inps.length>=9){inps[7].value=a.dur;inps[8].checked=a.loop}
+    if(inps.length>=6)inps[5].value=a.dur;
+    if(inps.length>=7)inps[6].checked=a.loop;
   }
+  renderPathLabels();
 }
 
 function saveScene(){
   let data=scenes.map(sc=>({name:sc.name,sprites:sc.sprites.map(sp=>({
     key:sp.key,src:sp.src,x:sp.x,y:sp.y,h:sp.h,flip:sp.flip,
-    anim:{enabled:sp.anim.enabled,startX:sp.anim.startX,endX:sp.anim.endX,dur:sp.anim.dur,loop:sp.anim.loop}
+    anim:{enabled:sp.anim.enabled,dur:sp.anim.dur,loop:sp.anim.loop,path:sp.anim.path.map(p=>({x:p.x,y:p.y}))}
   }))}));
-  let js='// Auto-generated sprite data — edit via sprite-editor.html\nwindow.SPRITE_DATA='+JSON.stringify(data,null,2)+';\n';
+  let js='// Auto-generated sprite data\nwindow.SPRITE_DATA='+JSON.stringify(data,null,2)+';\n';
   let blob=new Blob([js],{type:'text/javascript'});
-  let a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='scene-data.js';a.click();
+  let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='scene-data.js';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+function drawPathOnCanvas(path,color){
+  if(!path||path.length<2)return;
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(path[0].x*scale,path[0].y*scale);
+  for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x*scale,path[i].y*scale);
+  ctx.stroke();ctx.setLineDash([]);
+  for(let i=0;i<path.length;i++){
+    ctx.fillStyle=i===dragPt&&selected!==null?'#ff0':color;
+    ctx.beginPath();ctx.arc(path[i].x*scale,path[i].y*scale,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#000';ctx.font='9px monospace';
+    ctx.fillText(i+1,path[i].x*scale+8,path[i].y*scale+4);
+  }
 }
 
 function render(ts){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(playing){
-    let dt=(ts-lastFrame)/1000;lastFrame=ts;
-    animTime+=dt;
-    let maxDur=getMaxDur();
-    document.getElementById('time-slider').value=Math.round((animTime%maxDur)/maxDur*1000);
-    document.getElementById('time-label').textContent=animTime.toFixed(1)+'s';
-  }
-  let sc=scenes[curScene];
-  let bgImg=images[sc.bg];
-  if(bgImg&&bgImg.complete)ctx.drawImage(bgImg,0,0,W*scale,H*scale);
+  if(playing){let dt=(ts-lastFrame)/1000;lastFrame=ts;animTime+=dt;
+    let maxDur=getMaxDur();document.getElementById('time-slider').value=Math.round((animTime%maxDur)/maxDur*1000);
+    document.getElementById('time-label').textContent=animTime.toFixed(1)+'s';}
+  let sc=scenes[curScene],bg=images[sc.bg];
+  if(bg&&bg.complete)ctx.drawImage(bg,0,0,W*scale,H*scale);
+  // Draw paths for selected sprite
+  if(selected!==null){let sp=sc.sprites[selected];if(sp.anim.enabled&&sp.anim.path.length>1)drawPathOnCanvas(sp.anim.path,'#f0b860')}
+  // Draw sprites
   for(let i=0;i<sc.sprites.length;i++){
-    let sp=sc.sprites[i];let img=images[sp.src];
-    if(!img||!img.complete)continue;
-    let cx=playing?getSpriteX(sp,animTime):sp.x;
-    let w=sp.h*img.width/img.height;
-    let sx=cx*scale,sy=sp.y*scale,sw=w*scale,sh=sp.h*scale;
-    if(sp.flip){
-      ctx.save();ctx.translate(sx+sw/2,sy+sh/2);ctx.scale(-1,1);
-      ctx.drawImage(img,0,0,img.width,img.height,-sw/2,-sh/2,sw,sh);ctx.restore();
-    }else{
-      ctx.drawImage(img,0,0,img.width,img.height,sx,sy,sw,sh);
-    }
-    if(i===selected){
-      ctx.strokeStyle='#f0b860';ctx.lineWidth=2;ctx.strokeRect(sx-1,sy-1,sw+2,sh+2);
-      ctx.fillStyle='#f0b860';ctx.beginPath();ctx.arc(sx,sy,4,0,Math.PI*2);ctx.fill();
-    }
+    let sp=sc.sprites[i],img=images[sp.src];if(!img||!img.complete)continue;
+    let pos=playing?getSpritePos(sp,animTime):{x:sp.x,y:sp.y};
+    let w=sp.h*img.width/img.height,sx=pos.x*scale,sy=pos.y*scale,sw=w*scale,sh=sp.h*scale;
+    if(sp.flip){ctx.save();ctx.translate(sx+sw/2,sy+sh/2);ctx.scale(-1,1);ctx.drawImage(img,0,0,img.width,img.height,-sw/2,-sh/2,sw,sh);ctx.restore()}
+    else{ctx.drawImage(img,0,0,img.width,img.height,sx,sy,sw,sh)}
+    if(i===selected){ctx.strokeStyle='#f0b860';ctx.lineWidth=2;ctx.strokeRect(sx-1,sy-1,sw+2,sh+2);ctx.fillStyle='#f0b860';ctx.beginPath();ctx.arc(sx,sy,4,0,Math.PI*2);ctx.fill()}
   }
   requestAnimationFrame(render);
 }
-
-buildPanel();
-requestAnimationFrame(render);
+buildPanel();requestAnimationFrame(render);
 </script>
 </body>
 </html>

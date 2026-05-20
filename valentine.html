@@ -63,15 +63,25 @@ function drSpr(key,x,y,h,flip){let img=S[key];if(!img||!img.complete)return;let 
 // ── Sprite config from scene-data.js or defaults ──
 const DEFAULTS=[
   {name:'标题',sprites:[{key:'boy',x:175,y:190,h:36,flip:false},{key:'girl',x:210,y:190,h:36,flip:false},{key:'dog',x:250,y:200,h:22,flip:false}]},
-  {name:'滑雪',sprites:[{key:'boySki',x:-60,y:148,h:34,flip:false,anim:{startX:-60,endX:500,dur:10,loop:true}},{key:'girlSki',x:-20,y:148,h:34,flip:false,anim:{startX:-20,endX:500,dur:10,loop:true}},{key:'dog',x:50,y:154,h:22,flip:false,anim:{startX:50,endX:500,dur:8,loop:true}}]},
+  {name:'滑雪',sprites:[{key:'boySki',x:-60,y:148,h:34,flip:false,anim:{dur:10,loop:true,path:[{x:-60,y:160},{x:80,y:152},{x:200,y:140},{x:340,y:135},{x:500,y:145}]}},{key:'girlSki',x:-20,y:148,h:34,flip:false,anim:{dur:10,loop:true,path:[{x:-30,y:155},{x:100,y:148},{x:230,y:135},{x:360,y:130},{x:500,y:142}]}},{key:'dog',x:50,y:154,h:22,flip:false,anim:{dur:8,loop:true,path:[{x:20,y:165},{x:140,y:158},{x:280,y:148},{x:420,y:145},{x:500,y:155}]}}]},
   {name:'木屋',sprites:[{key:'boy',x:80,y:162,h:34,flip:false},{key:'girl',x:110,y:162,h:34,flip:false},{key:'dog',x:290,y:178,h:22,flip:false}]},
 ];
-function sd(scene,key){let data=(window.SPRITE_DATA||DEFAULTS)[scene];return data?data.sprites.find(s=>s.key===key):null}
+function sd(sc,key){let data=(window.SPRITE_DATA||DEFAULTS)[sc];return data?data.sprites.find(s=>s.key===key):null}
 function _x(sc,key,def){let s=sd(sc,key);return s?s.x:def}
 function _y(sc,key,def){let s=sd(sc,key);return s?s.y:def}
 function _h(sc,key,def){let s=sd(sc,key);return s?s.h:def}
 function _f(sc,key,def){let s=sd(sc,key);return s?s.flip:def}
-function _a(sc,key){let s=sd(sc,key);return s?s.anim:null}
+function _a(sc,key){let s=sd(sc,key);return s&&s.anim?s.anim:null}
+// Path interpolation: get position at progress t (0-1) along path
+function pathPos(path,t){
+  if(!path||path.length<2)return path&&path[0]?{x:path[0].x,y:path[0].y}:{x:0,y:0};
+  let segs=[],total=0;
+  for(let i=1;i<path.length;i++){let dx=path[i].x-path[i-1].x,dy=path[i].y-path[i-1].y;let len=Math.sqrt(dx*dx+dy*dy);segs.push({len,start:path[i-1],end:path[i]});total+=len}
+  if(total===0)return{x:path[0].x,y:path[0].y};
+  let target=t*total,acc=0;
+  for(let s of segs){if(acc+s.len>=target||s===segs[segs.length-1]){let st=Math.min(1,Math.max(0,(target-acc)/s.len));return{x:s.start.x+(s.end.x-s.start.x)*st,y:s.start.y+(s.end.y-s.start.y)*st}}acc+=s.len}
+  return{x:path[path.length-1].x,y:path[path.length-1].y};
+}
 function PR(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w,h)}
 function PC(cx,cy,r,c){bx.fillStyle=c;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r)bx.fillRect(cx+dx|0,cy+dy|0,1,1)}
 
@@ -192,13 +202,13 @@ function renderSki(){
   bx.drawImage(S['ski'],0,0,W,H);
   let t=Date.now()/1000;
   let ca=_a(1,'boySki'),cg=_a(1,'girlSki'),cd=_a(1,'dog');
-  let bX=ca?ca.startX+(ca.endX-ca.startX)*(((t%ca.dur)+ca.dur)%ca.dur/ca.dur):_x(1,'boySki',100);
-  let gX=cg?cg.startX+(cg.endX-cg.startX)*(((t%cg.dur)+cg.dur)%cg.dur/cg.dur):_x(1,'girlSki',130);
-  let dX=cd?cd.startX+(cd.endX-cd.startX)*(((t%cd.dur)+cd.dur)%cd.dur/cd.dur):_x(1,'dog',180);
+  let bP=ca&&ca.path?pathPos(ca.path,((t%ca.dur)+ca.dur)%ca.dur/ca.dur):{x:_x(1,'boySki',100),y:_y(1,'boySki',148)};
+  let gP=cg&&cg.path?pathPos(cg.path,((t%cg.dur)+cg.dur)%cg.dur/cg.dur):{x:_x(1,'girlSki',130),y:_y(1,'girlSki',148)};
+  let dP=cd&&cd.path?pathPos(cd.path,((t%cd.dur)+cd.dur)%cd.dur/cd.dur):{x:_x(1,'dog',180),y:_y(1,'dog',154)};
   let db=Math.sin(t*6)*2;
-  drSpr('boySki',bX,_y(1,'boySki',148),_h(1,'boySki',34),_f(1,'boySki',false));
-  drSpr('girlSki',gX,_y(1,'girlSki',148),_h(1,'girlSki',34),_f(1,'girlSki',false));
-  drSpr('dog',dX,_y(1,'dog',154)+db,_h(1,'dog',22),_f(1,'dog',false));
+  drSpr('boySki',bP.x,bP.y,_h(1,'boySki',34),_f(1,'boySki',false));
+  drSpr('girlSki',gP.x,gP.y,_h(1,'girlSki',34),_f(1,'girlSki',false));
+  drSpr('dog',dP.x,dP.y+db,_h(1,'dog',22),_f(1,'dog',false));
   for(let i=0;i<6;i++){let lx=(i*43+t*60)%(W+30)-15;P(lx|0,125+i*10,6+i%2*3,1,'rgba(255,255,255,.35)')}
   let ba=(Math.sin(t*3)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
   bx.font='10px "Courier New",monospace';bx.fillText('▼ 点击继续',200,258);
