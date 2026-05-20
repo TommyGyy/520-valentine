@@ -194,7 +194,7 @@ function renderTitle(){
   bx.font='9px "Courier New",monospace';bx.fillStyle=C.txt;
   bx.fillText('一段像素旅程 · 为你而作',240-bx.measureText('一段像素旅程 · 为你而作').width/2,122);
   let a=(Math.sin(Date.now()/800)+1)/2;bx.fillStyle=`rgba(74,48,32,${.4+a*.6})`;
-  bx.fillText('— 点击任意处开始 —',240-bx.measureText('— 点击任意处开始 —').width/2,198);
+  bx.fillText('— 点击任意处开始 —',240-bx.measureText('— 点击任意处开始 —').width/2,248);
   drSnow()
 }
 
@@ -203,9 +203,12 @@ function renderSki(){
   let t=Date.now()/1000;
   let ca=_a(1,'boySki'),cg=_a(1,'girlSki'),cd=_a(1,'dog');
   let bh=_h(1,'boySki',34),gh=_h(1,'girlSki',34),dh=_h(1,'dog',22);
-  let bP=ca&&ca.path?pathPos(ca.path,((t%ca.dur)+ca.dur)%ca.dur/ca.dur):{x:_x(1,'boySki',100),y:_y(1,'boySki',148)};
-  let gP=cg&&cg.path?pathPos(cg.path,((t%cg.dur)+cg.dur)%cg.dur/cg.dur):{x:_x(1,'girlSki',130),y:_y(1,'girlSki',148)};
-  let dP=cd&&cd.path?pathPos(cd.path,((t%cd.dur)+cd.dur)%cd.dur/cd.dur):{x:_x(1,'dog',180),y:_y(1,'dog',154)};
+  let bp=ca&&ca.loop?((t%ca.dur)+ca.dur)%ca.dur/ca.dur:Math.min(t,ca.dur)/ca.dur;
+  let gp=cg&&cg.loop?((t%cg.dur)+cg.dur)%cg.dur/cg.dur:Math.min(t,cg.dur)/cg.dur;
+  let dp=cd&&cd.loop?((t%cd.dur)+cd.dur)%cd.dur/cd.dur:Math.min(t,cd.dur)/cd.dur;
+  let bP=ca&&ca.path?pathPos(ca.path,bp):{x:_x(1,'boySki',100),y:_y(1,'boySki',148)};
+  let gP=cg&&cg.path?pathPos(cg.path,gp):{x:_x(1,'girlSki',130),y:_y(1,'girlSki',148)};
+  let dP=cd&&cd.path?pathPos(cd.path,dp):{x:_x(1,'dog',180),y:_y(1,'dog',154)};
   let db=Math.sin(t*6)*2;
   drSpr('boySki',bP.x,bP.y-bh,bh,_f(1,'boySki',false));
   drSpr('girlSki',gP.x,gP.y-gh,gh,_f(1,'girlSki',false));
