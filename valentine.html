@@ -136,10 +136,9 @@ function handleClick(){
   if(scene==0){goScene(1);return}
   if(scene==1){goScene(2);return}
   if(scene==2&&!confess){
-    let rr=cv.getBoundingClientRect();let sx=(event.clientX-rr.left)/sc,sy=(event.clientY-rr.top)/sc;
-    if(sx>210&&sx<270&&sy>128&&sy<176){confess=1;confTm=0;
-      for(let i=0;i<22;i++)hrts.push({x:220+Math.random()*40,y:120+Math.random()*30,vx:(Math.random()-.5)*25,vy:-18-Math.random()*35,s:2+(Math.random()*5|0),life:2+Math.random()*3});
-      playSFX('adv')}
+    confess=1;confTm=0;
+    for(let i=0;i<22;i++)hrts.push({x:240+Math.random()*40,y:100+Math.random()*60,vx:(Math.random()-.5)*25,vy:-18-Math.random()*35,s:2+(Math.random()*5|0),life:2+Math.random()*3});
+    playSFX('adv');
   }
 }
 
