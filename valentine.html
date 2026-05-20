@@ -161,11 +161,11 @@ function renderTitle(){
   dL(L5,tx,ty,C.coatR);dL(L2,tx+18,ty,C.txt);dL(L0,tx+39,ty,C.txt);
   drHeart(tx+62,ty-4,2);
   dL(L5,tx+76,ty,C.coatR);dL(L2,tx+94,ty,C.txt);dL(L0,tx+115,ty,C.txt);
-  btx.font='9px "Courier New",monospace';btx.fillStyle=C.txt;
+  bx.font='9px "Courier New",monospace';bx.fillStyle=C.txt;
   let sub='一段像素旅程 · 为你而作';
-  btx.fillText(sub,240-btx.measureText(sub).width/2,122);
-  let a=(Math.sin(Date.now()/800)+1)/2;btx.fillStyle=`rgba(74,48,32,${.4+a*.6})`;
-  btx.fillText('— 点击任意处开始 —',240-btx.measureText('— 点击任意处开始 —').width/2,198);
+  bx.fillText(sub,240-bx.measureText(sub).width/2,122);
+  let a=(Math.sin(Date.now()/800)+1)/2;bx.fillStyle=`rgba(74,48,32,${.4+a*.6})`;
+  bx.fillText('— 点击任意处开始 —',240-bx.measureText('— 点击任意处开始 —').width/2,198);
   drSnow()
 }
 
