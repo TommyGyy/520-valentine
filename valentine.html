@@ -200,7 +200,7 @@ function renderTitle(){
 
 function renderSki(){
   bx.drawImage(S['ski'],0,0,W,H);
-  let t=Date.now()/1000;
+  let t=timer;
   let ca=_a(1,'boySki'),cg=_a(1,'girlSki'),cd=_a(1,'dog');
   let bh=_h(1,'boySki',34),gh=_h(1,'girlSki',34),dh=_h(1,'dog',22);
   let bp=ca&&ca.loop?((t%ca.dur)+ca.dur)%ca.dur/ca.dur:Math.min(t,ca.dur)/ca.dur;
