@@ -120,10 +120,11 @@ function drGround(y){
 // Scene manager
 let scene=0,timer=0,alpha=0,trans=0,nxt=0,target=-1;
 function goScene(i){if(trans)return;playSFX('adv');trans=1;nxt=0;target=i}
-function finTrans(){scene=target>=0?target:Math.min(scene+1,1);target=-1;timer=0;trans=0;alpha=0;scrollX=0}
+function finTrans(){scene=target>=0?target:Math.min(scene+1,2);target=-1;timer=0;trans=0;alpha=0;scrollX=0}
 function handleClick(){
   if(scene==0){goScene(1);return}
-  if(scene==1&&!confess){
+  if(scene==1){goScene(2);return}
+  if(scene==2&&!confess){
     let rr=cv.getBoundingClientRect();let sx=(event.clientX-rr.left)/sc,sy=(event.clientY-rr.top)/sc;
     if(sx>210&&sx<270&&sy>128&&sy<176){confess=1;confTm=0;
       for(let i=0;i<22;i++)hrts.push({x:220+Math.random()*40,y:120+Math.random()*30,vx:(Math.random()-.5)*25,vy:-18-Math.random()*35,s:2+(Math.random()*5|0),life:2+Math.random()*3});
@@ -142,7 +143,32 @@ addEventListener('click',e=>{if(e.target.id=='mb')return;if(ds){nextDlg();return
 // Scene state
 let scrollX=0,confess=0,confTm=0,hrts=[];
 
-// Scene rendering — scene 0: skiing, scene 1: cabin
+// Scene rendering
+function renderTitle(){
+  drSky([0xf0,0xb8,0x60],[0xf5,0xc8,0x90]);
+  drMt(100,190,90,55,C.mtF,C.mtSn);drMt(20,195,60,40,C.mtF,C.mtSn);
+  drMt(360,185,100,60,C.mtM,C.mtSn);drMt(280,192,75,45,C.mtM,C.mtSn);
+  drGround(210);
+  drTree(40,210,38);drTree(80,215,32);drTree(380,205,45);drTree(420,210,35);drTree(455,212,28);
+  drTree(140,218,24);drTree(310,216,26);
+  drCh(175,188,C.coatB,'stand');drCh(210,190,C.coatR,'stand');
+  drDog(255,200);
+  let tx=170,ty=72;
+  let L5=[[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,1]];
+  let L2=[[1,1,1,1,1],[0,0,0,0,1],[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,1]];
+  let L0=[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,1,1],[1,0,1,0,1],[0,1,0,0,1]];
+  function dL(g,ox,oy,c){for(let r=0;r<g.length;r++)for(let cc=0;cc<g[r].length;cc++)if(g[r][cc])PR(ox+cc*3,oy+r*3,3,3,c)}
+  dL(L5,tx,ty,C.coatR);dL(L2,tx+18,ty,C.txt);dL(L0,tx+39,ty,C.txt);
+  drHeart(tx+62,ty-4,2);
+  dL(L5,tx+76,ty,C.coatR);dL(L2,tx+94,ty,C.txt);dL(L0,tx+115,ty,C.txt);
+  btx.font='9px "Courier New",monospace';btx.fillStyle=C.txt;
+  let sub='一段像素旅程 · 为你而作';
+  btx.fillText(sub,240-btx.measureText(sub).width/2,122);
+  let a=(Math.sin(Date.now()/800)+1)/2;btx.fillStyle=`rgba(74,48,32,${.4+a*.6})`;
+  btx.fillText('— 点击任意处开始 —',240-btx.measureText('— 点击任意处开始 —').width/2,198);
+  drSnow()
+}
+
 function renderSki(){
   drSky([0x7e,0xb8,0xda],[0xc8,0xdc,0xe8]);
   scrollX+=1.2;
@@ -208,7 +234,8 @@ function upd(dt){
   else if(alpha>0)alpha=Math.max(alpha-dt*2.5,0)
 }
 function rndr(){
-  if(scene==0)renderSki();
+  if(scene==0)renderTitle();
+  else if(scene==1)renderSki();
   else renderCab();
   if(alpha>0){bx.fillStyle=`rgba(0,0,0,${alpha})`;bx.fillRect(0,0,W,H)}
 }
