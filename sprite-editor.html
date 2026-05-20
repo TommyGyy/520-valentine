@@ -62,9 +62,9 @@ let scale=3,curScene=0,selected=null,dragging=null,dragPt=-1,images={},dragOx=0,
 let playing=false,animTime=0,lastFrame=0;
 
 // Default paths for skiing scene
-const skiPathBoy=[{x:-60,y:160},{x:80,y:152},{x:200,y:140},{x:340,y:135},{x:500,y:145}];
-const skiPathGirl=[{x:-30,y:155},{x:100,y:148},{x:230,y:135},{x:360,y:130},{x:500,y:142}];
-const skiPathDog=[{x:20,y:165},{x:140,y:158},{x:280,y:148},{x:420,y:145},{x:500,y:155}];
+const skiPathBoy=[{x:-60,y:178},{x:80,y:175},{x:200,y:170},{x:340,y:168},{x:500,y:175}];
+const skiPathGirl=[{x:-30,y:178},{x:100,y:174},{x:230,y:168},{x:360,y:166},{x:500,y:173}];
+const skiPathDog=[{x:20,y:180},{x:140,y:176},{x:280,y:172},{x:420,y:170},{x:500,y:178}];
 
 const scenes=[
 {name:'标题',bg:'bg-title.png',sprites:[
@@ -221,8 +221,9 @@ function hitSprite(mx,my){
   for(let i=sps.length-1;i>=0;i--){
     let sp=sps[i];let img=images[sp.src];if(!img)continue;
     let pos=playing?getSpritePos(sp,animTime):{x:sp.x,y:sp.y};
-    let w=sp.h*img.width/img.height;
-    if(mx>=pos.x&&mx<=pos.x+w&&my>=pos.y&&my<=pos.y+sp.h)return i;
+    let offsetY=sp.anim.enabled?sp.h:0;
+    let w=sp.h*img.width/img.height,top=pos.y-offsetY;
+    if(mx>=pos.x&&mx<=pos.x+w&&my>=top&&my<=top+sp.h)return i;
   }
   return null;
 }
@@ -265,7 +266,8 @@ canvas.addEventListener('mousedown',e=>{
     selected=idx;dragPt=-1;updateSelectedClass();
     let sp=scenes[curScene].sprites[idx];
     let pos=playing?getSpritePos(sp,animTime):{x:sp.x,y:sp.y};
-    dragOx=mx-pos.x;dragOy=my-pos.y;dragging=idx;
+    let offY=sp.anim.enabled?sp.h:0;
+    dragOx=mx-pos.x;dragOy=my-(pos.y-offY);dragging=idx;
   }else{selected=null;dragPt=-1;updateSelectedClass()}
 });
 canvas.addEventListener('mousemove',e=>{
@@ -277,7 +279,8 @@ canvas.addEventListener('mousemove',e=>{
     renderPathLabels();
   }else if(dragging!==null){
     let sp=scenes[curScene].sprites[dragging];
-    let newX=Math.round(mx-dragOx),newY=Math.round(my-dragOy);
+    let offY=sp.anim.enabled?sp.h:0;
+    let newX=Math.round(mx-dragOx),newY=Math.round(my-dragOy)+offY;
     if(playing){let dx=newX-sp.x,dy=newY-sp.y;for(let p of sp.anim.path){p.x+=dx;p.y+=dy}}
     sp.x=newX;sp.y=newY;syncInputs();renderPathLabels();
   }
@@ -356,10 +359,11 @@ function render(ts){
   for(let i=0;i<sc.sprites.length;i++){
     let sp=sc.sprites[i],img=images[sp.src];if(!img||!img.complete)continue;
     let pos=playing?getSpritePos(sp,animTime):{x:sp.x,y:sp.y};
-    let w=sp.h*img.width/img.height,sx=pos.x*scale,sy=pos.y*scale,sw=w*scale,sh=sp.h*scale;
+    let offsetY=sp.anim.enabled?sp.h:0;
+    let w=sp.h*img.width/img.height,sx=pos.x*scale,sy=(pos.y-offsetY)*scale,sw=w*scale,sh=sp.h*scale;
     if(sp.flip){ctx.save();ctx.translate(sx+sw/2,sy+sh/2);ctx.scale(-1,1);ctx.drawImage(img,0,0,img.width,img.height,-sw/2,-sh/2,sw,sh);ctx.restore()}
     else{ctx.drawImage(img,0,0,img.width,img.height,sx,sy,sw,sh)}
-    if(i===selected){ctx.strokeStyle='#f0b860';ctx.lineWidth=2;ctx.strokeRect(sx-1,sy-1,sw+2,sh+2);ctx.fillStyle='#f0b860';ctx.beginPath();ctx.arc(sx,sy,4,0,Math.PI*2);ctx.fill()}
+    if(i===selected){ctx.strokeStyle='#f0b860';ctx.lineWidth=2;ctx.strokeRect(sx-1,sy-1,sw+2,sh+2);let ax=pos.x*scale+sw/2,ay=sp.anim.enabled?pos.y*scale:pos.y*scale;ctx.fillStyle='#f0b860';ctx.beginPath();ctx.arc(ax,ay,4,0,Math.PI*2);ctx.fill()}
   }
   requestAnimationFrame(render);
 }

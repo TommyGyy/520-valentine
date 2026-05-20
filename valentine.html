@@ -63,7 +63,7 @@ function drSpr(key,x,y,h,flip){let img=S[key];if(!img||!img.complete)return;let 
 // ── Sprite config from scene-data.js or defaults ──
 const DEFAULTS=[
   {name:'标题',sprites:[{key:'boy',x:175,y:190,h:36,flip:false},{key:'girl',x:210,y:190,h:36,flip:false},{key:'dog',x:250,y:200,h:22,flip:false}]},
-  {name:'滑雪',sprites:[{key:'boySki',x:-60,y:148,h:34,flip:false,anim:{dur:10,loop:true,path:[{x:-60,y:160},{x:80,y:152},{x:200,y:140},{x:340,y:135},{x:500,y:145}]}},{key:'girlSki',x:-20,y:148,h:34,flip:false,anim:{dur:10,loop:true,path:[{x:-30,y:155},{x:100,y:148},{x:230,y:135},{x:360,y:130},{x:500,y:142}]}},{key:'dog',x:50,y:154,h:22,flip:false,anim:{dur:8,loop:true,path:[{x:20,y:165},{x:140,y:158},{x:280,y:148},{x:420,y:145},{x:500,y:155}]}}]},
+  {name:'滑雪',sprites:[{key:'boySki',x:-60,y:178,h:34,flip:false,anim:{dur:10,loop:true,path:[{x:-60,y:178},{x:80,y:175},{x:200,y:170},{x:340,y:168},{x:500,y:175}]}},{key:'girlSki',x:-20,y:178,h:34,flip:false,anim:{dur:10,loop:true,path:[{x:-30,y:178},{x:100,y:174},{x:230,y:168},{x:360,y:166},{x:500,y:173}]}},{key:'dog',x:50,y:180,h:22,flip:false,anim:{dur:8,loop:true,path:[{x:20,y:180},{x:140,y:176},{x:280,y:172},{x:420,y:170},{x:500,y:178}]}}]},
   {name:'木屋',sprites:[{key:'boy',x:80,y:162,h:34,flip:false},{key:'girl',x:110,y:162,h:34,flip:false},{key:'dog',x:290,y:178,h:22,flip:false}]},
 ];
 function sd(sc,key){let data=(window.SPRITE_DATA||DEFAULTS)[sc];return data?data.sprites.find(s=>s.key===key):null}
@@ -202,13 +202,14 @@ function renderSki(){
   bx.drawImage(S['ski'],0,0,W,H);
   let t=Date.now()/1000;
   let ca=_a(1,'boySki'),cg=_a(1,'girlSki'),cd=_a(1,'dog');
+  let bh=_h(1,'boySki',34),gh=_h(1,'girlSki',34),dh=_h(1,'dog',22);
   let bP=ca&&ca.path?pathPos(ca.path,((t%ca.dur)+ca.dur)%ca.dur/ca.dur):{x:_x(1,'boySki',100),y:_y(1,'boySki',148)};
   let gP=cg&&cg.path?pathPos(cg.path,((t%cg.dur)+cg.dur)%cg.dur/cg.dur):{x:_x(1,'girlSki',130),y:_y(1,'girlSki',148)};
   let dP=cd&&cd.path?pathPos(cd.path,((t%cd.dur)+cd.dur)%cd.dur/cd.dur):{x:_x(1,'dog',180),y:_y(1,'dog',154)};
   let db=Math.sin(t*6)*2;
-  drSpr('boySki',bP.x,bP.y,_h(1,'boySki',34),_f(1,'boySki',false));
-  drSpr('girlSki',gP.x,gP.y,_h(1,'girlSki',34),_f(1,'girlSki',false));
-  drSpr('dog',dP.x,dP.y+db,_h(1,'dog',22),_f(1,'dog',false));
+  drSpr('boySki',bP.x,bP.y-bh,bh,_f(1,'boySki',false));
+  drSpr('girlSki',gP.x,gP.y-gh,gh,_f(1,'girlSki',false));
+  drSpr('dog',dP.x,dP.y-dh+db,dh,_f(1,'dog',false));
   for(let i=0;i<6;i++){let lx=(i*43+t*60)%(W+30)-15;P(lx|0,125+i*10,6+i%2*3,1,'rgba(255,255,255,.35)')}
   let ba=(Math.sin(t*3)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
   bx.font='10px "Courier New",monospace';bx.fillText('▼ 点击继续',200,258);
