@@ -263,19 +263,20 @@ function loop(ts){let dt=Math.min((ts-lt)/1000,.1);lt=ts;upd(dt);rndr();fl();req
 
 // Init
 addEventListener('click',function s(){if(bgm.paused)startM()},{once:1});
-// Show loading screen until all assets ready
+// Show loading screen until all assets ready (with 6s timeout)
+let loadStart=Date.now();
 function loadingLoop(ts){
-  btx.fillStyle='#2c1810';btx.fillRect(0,0,W,H);
-  btx.fillStyle='#c8956c';btx.font='14px "Courier New",monospace';
+  btx.fillStyle='#1a1a1a';btx.fillRect(0,0,W,H);
+  btx.fillStyle='#ffffff';btx.font='14px "Courier New",monospace';
   let txt='Loading...';
   btx.fillText(txt,240-btx.measureText(txt).width/2,130);
   let pct=Math.round(loaded/IMGS.length*100);
   btx.fillText(pct+'%',240-btx.measureText(pct+'%').width/2,155);
-  // Progress bar
-  PR(140,168,200,6,'#3a3a3a');
-  PR(140,168,200*pct/100|0,6,'#c8956c');
+  PR(140,168,200,6,'#555');
+  PR(140,168,Math.max(2,200*pct/100|0),6,'#c8956c');
   flip();
-  if(allLoaded){requestAnimationFrame(loop);return}
+  let timedOut=(Date.now()-loadStart)>6000;
+  if(allLoaded||timedOut){requestAnimationFrame(loop);return}
   requestAnimationFrame(loadingLoop);
 }
 requestAnimationFrame(loadingLoop);
