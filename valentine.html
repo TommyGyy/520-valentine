@@ -120,13 +120,10 @@ function drGround(y){
 // Scene manager
 let scene=0,timer=0,alpha=0,trans=0,nxt=0,target=-1;
 function goScene(i){if(trans)return;playSFX('adv');trans=1;nxt=0;target=i}
-function finTrans(){scene=target>=0?target:Math.min(scene+1,4);target=-1;timer=0;trans=0;alpha=0}
+function finTrans(){scene=target>=0?target:Math.min(scene+1,1);target=-1;timer=0;trans=0;alpha=0;scrollX=0}
 function handleClick(){
   if(scene==0){goScene(1);return}
-  if(scene==1){goScene(2);return}
-  if(scene==2){goScene(3);return}
-  if(scene==3){goScene(4);return}
-  if(scene==4&&!confess){
+  if(scene==1&&!confess){
     let rr=cv.getBoundingClientRect();let sx=(event.clientX-rr.left)/sc,sy=(event.clientY-rr.top)/sc;
     if(sx>210&&sx<270&&sy>128&&sy<176){confess=1;confTm=0;
       for(let i=0;i<22;i++)hrts.push({x:220+Math.random()*40,y:120+Math.random()*30,vx:(Math.random()-.5)*25,vy:-18-Math.random()*35,s:2+(Math.random()*5|0),life:2+Math.random()*3});
@@ -145,68 +142,8 @@ addEventListener('click',e=>{if(e.target.id=='mb')return;if(ds){nextDlg();return
 // Scene state
 let scrollX=0,confess=0,confTm=0,hrts=[];
 
-// Scene rendering
-function renderTitle(){
-  drSky([0xf0,0xb8,0x60],[0xf5,0xc8,0x90]);
-  drMt(120,190,80,55,C.mtF,C.mtSn);drMt(30,195,60,40,C.mtF,C.mtSn);
-  drMt(380,185,90,60,C.mtM,C.mtSn);drMt(300,195,70,45,C.mtM,C.mtSn);
-  drGround(210);
-  drTree(50,210,38);drTree(90,215,32);drTree(380,205,45);drTree(420,210,35);drTree(450,212,30);
-  drTree(150,220,25);drTree(310,218,28);
-  drCh(170,190,C.coatB,'stand');drCh(200,192,C.coatR,'stand');
-  drDog(250,200);
-  // Pixel title "520 ❤ 520"
-  let tx=170,ty=70;
-  let L5=[[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,1]];
-  let L2=[[1,1,1,1,1],[0,0,0,0,1],[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,1]];
-  let L0=[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,1,1],[1,0,1,0,1],[0,1,0,0,1]];
-  function dL(g,ox,oy,c){for(let r=0;r<g.length;r++)for(let cc=0;cc<g[r].length;cc++)if(g[r][cc])PR(ox+cc*3,oy+r*3,3,3,c)}
-  dL(L5,tx,ty,C.coatR);dL(L2,tx+18,ty,C.txt);dL(L0,tx+39,ty,C.txt);
-  drHeart(tx+62,ty-4,2);
-  dL(L5,tx+76,ty,C.coatR);dL(L2,tx+94,ty,C.txt);dL(L0,tx+115,ty,C.txt);
-  bx.font='9px "Courier New",monospace';bx.fillStyle=C.txt;
-  let sub='一段像素旅程 · 为你而作';
-  bx.fillText(sub,240-bx.measureText(sub).width/2,120);
-  let a=(Math.sin(Date.now()/800)+1)/2;bx.fillStyle=`rgba(74,48,32,${.4+a*.6})`;
-  let hint='— 点击任意处开始 —';
-  bx.fillText(hint,240-bx.measureText(hint).width/2,198);
-  drSnow()
-}
-
-function renderScene0(){
-  drSky([0x7e,0xb8,0xda],[0xc8,0xdc,0xe8]);
-  drMt(0,155,120,70,C.mtF,C.mtSn);drMt(80,145,110,80,C.mtM,C.mtSn);
-  drMt(180,152,130,72,C.mtN,C.mtSn);drMt(290,140,120,85,C.mtM,C.mtSn);
-  drMt(390,148,100,75,C.mtF,C.mtSn);
-  drGround(180);
-  drTree(35,178,36);drTree(65,182,30);drTree(410,175,42);drTree(445,180,34);
-  drTree(130,185,24);drTree(370,183,26);
-  PC(100,178,5,C.snow);PC(100,170,4,C.snow);PC(100,163,3,C.snow);
-  P(98,162,1,1,'#222');P(101,162,1,1,'#222');P(100,165,2,2,'#f08040');
-  PR(390,122,4,44,C.wood);PR(382,116,20,12,C.wood);PR(386,120,12,2,C.snow);
-  drCh(180,162,C.coatB,'stand');drCh(220,164,C.coatR,'stand');
-  let ba=(Math.sin(Date.now()/600)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
-  bx.font='10px "Courier New",monospace';bx.fillText('▼ 点击继续',200,260);
-  drSnow()
-}
-
-function renderScene1(){
-  drSky([0x7e,0xb8,0xda],[0xc8,0xdc,0xe8]);
-  drMt(0,148,100,68,C.mtF,C.mtSn);drMt(70,142,110,75,C.mtM,C.mtSn);
-  drMt(310,145,120,72,C.mtN,C.mtSn);drMt(400,148,100,68,C.mtF,C.mtSn);
-  drGround(175);
-  drTree(20,172,32);drTree(55,178,28);drTree(390,170,40);drTree(430,175,35);
-  for(let i=0;i<W;i+=12){let bh=2+Math.sin(i*.35+1)*3;PR(i,173,12,bh,C.snow)}
-  drCh(160,155,C.coatB,'stand');drCh(190,157,C.coatR,'stand');
-  drDog(240,166);
-  PR(255,180,26,2,C.wood);PR(257,184,24,2,C.wdD);
-  P(50,55,3,2,'#5c3d2e');P(56,54,3,2,'#5c3d2e');
-  let ba=(Math.sin(Date.now()/600)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
-  bx.fillText('▼ 点击继续',200,260);
-  drSnow()
-}
-
-function renderScene2(){
+// Scene rendering — scene 0: skiing, scene 1: cabin
+function renderSki(){
   drSky([0x7e,0xb8,0xda],[0xc8,0xdc,0xe8]);
   scrollX+=1.2;
   let lyrs=[{y:65,h:95,c:C.mtF,s:.2},{y:55,h:105,c:C.mtM,s:.4},{y:80,h:85,c:C.mtN,s:.3}];
@@ -222,7 +159,7 @@ function renderScene2(){
   drSnow()
 }
 
-function renderScene3(){
+function renderCab(){
   drSky([0x1a,0x1a,0x3a],[0x3a,0x3a,0x6a]);
   for(let i=0;i<35;i++){let sx=(i*83+17)%W,sy=(i*47+7)%120;let tw=Math.sin(Date.now()/1200+i)*.6+.4;bx.fillStyle=`rgba(255,232,192,${tw})`;bx.fillRect(sx,sy,2,2)}
   drMt(0,130,130,65,'#3a3a52',C.mtSn);drMt(110,125,120,70,'#303048',C.mtSn);
@@ -271,8 +208,8 @@ function upd(dt){
   else if(alpha>0)alpha=Math.max(alpha-dt*2.5,0)
 }
 function rndr(){
-  if(scene==0)renderTitle();
-  else{switch(scene){case 1:renderScene0();break;case 2:renderScene1();break;case 3:renderScene2();break;case 4:renderScene3();break}}
+  if(scene==0)renderSki();
+  else renderCab();
   if(alpha>0){bx.fillStyle=`rgba(0,0,0,${alpha})`;bx.fillRect(0,0,W,H)}
 }
 function loop(ts){let dt=Math.min((ts-lt)/1000,.1);lt=ts;upd(dt);rndr();fl();requestAnimationFrame(loop)}
