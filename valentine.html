@@ -213,9 +213,21 @@ function renderCab(){
 
 // Audio engine
 let actx=null,mon=0,mto=null;
-const NF={C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392.00,A4:440.00,B4:493.88,C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880.00,B5:987.77,C6:1046.50,D6:1174.66,E6:1318.51};
-const mel=[{n:'C5',d:.25},{n:'E5',d:.25},{n:'G5',d:.25},{n:'C6',d:.5},{n:'G5',d:.25},{n:'E5',d:.25},{n:'C6',d:.25},{n:'G5',d:.25},{n:'E5',d:.25},{n:'D5',d:.5},{n:'F5',d:.25},{n:'A5',d:.25},{n:'D6',d:.25},{n:'C6',d:.25},{n:'A5',d:.25},{n:'G5',d:.5},{n:'E5',d:.25},{n:'G5',d:.25},{n:'C6',d:.25},{n:'E6',d:.25},{n:'D6',d:.25},{n:'C6',d:.75},{n:null,d:.25},{n:'E5',d:.5},{n:'G5',d:.25},{n:'E5',d:.25},{n:'C5',d:.5},{n:'D5',d:.25},{n:'E5',d:.25},{n:'F5',d:.5},{n:'E5',d:.25},{n:'D5',d:.25},{n:'C5',d:.75},{n:null,d:.25},{n:'G4',d:.5},{n:'C5',d:.25},{n:'E5',d:.25},{n:'G5',d:.5},{n:'C6',d:.5},{n:'G5',d:.5},{n:'E5',d:.5},{n:'C5',d:1}];
-const BPM=140,bd=60/BPM,tb=mel.reduce((s,n)=>s+n.d,0),ld=tb*bd;
+const NF={G3:196.00,A3:220.00,B3:246.94,C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392.00,A4:440.00,B4:493.88,C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880.00,B5:987.77,C6:1046.50,D6:1174.66,E6:1318.51};
+// Littleroot Town (未白镇) theme — Pokemon RSE, BPM 110
+const mel=[
+  // A section
+  {n:'G3',d:.25},{n:'C4',d:.25},{n:'E4',d:.25},{n:'G4',d:.5},{n:'C4',d:.25},{n:'E4',d:.25},{n:'G4',d:.5},{n:'C5',d:.25},
+  {n:'A3',d:.25},{n:'C4',d:.25},{n:'F4',d:.25},{n:'A4',d:.5},{n:'C4',d:.25},{n:'F4',d:.25},{n:'A4',d:.5},{n:'C5',d:.25},
+  {n:'F3',d:.25},{n:'A3',d:.25},{n:'C4',d:.25},{n:'F4',d:.5},{n:'A3',d:.25},{n:'C4',d:.25},{n:'F4',d:.5},{n:'A4',d:.25},
+  {n:'G3',d:.25},{n:'C4',d:.25},{n:'E4',d:.25},{n:'G4',d:.5},{n:'C4',d:.25},{n:'D4',d:.25},{n:'E4',d:.25},{n:'C5',d:.25},
+  // B section
+  {n:'C5',d:.25},{n:'B4',d:.25},{n:'A4',d:.25},{n:'G4',d:.25},{n:'F4',d:.25},{n:'E4',d:.25},{n:'D4',d:.25},{n:null,d:.25},
+  {n:'E4',d:.25},{n:'F4',d:.25},{n:'G4',d:.25},{n:'A4',d:.25},{n:'B4',d:.25},{n:'C5',d:.25},{n:'D5',d:.25},{n:null,d:.25},
+  {n:'E5',d:.25},{n:'D5',d:.25},{n:'C5',d:.25},{n:'B4',d:.25},{n:'A4',d:.25},{n:'G4',d:.25},{n:'F4',d:.25},{n:null,d:.25},
+  {n:'E4',d:.5},{n:'D4',d:.25},{n:'C4',d:.75},{n:null,d:.5},
+];
+const BPM=110,bd=60/BPM,tb=mel.reduce((s,n)=>s+n.d,0),ld=tb*bd;
 function pn(f,t,dur){let o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07,t+.02);g.gain.setValueAtTime(.07,t+dur*.6);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+dur+.01);let o2=actx.createOscillator(),g2=actx.createGain();o2.type='triangle';o2.frequency.value=f/2;g2.gain.setValueAtTime(0,t);g2.gain.linearRampToValueAtTime(.04,t+.02);g2.gain.setValueAtTime(.04,t+dur*.6);g2.gain.linearRampToValueAtTime(0,t+dur);o2.connect(g2);g2.connect(actx.destination);o2.start(t);o2.stop(t+dur+.01)}
 function sched(){if(!mon||!actx)return;let t=actx.currentTime+.05;for(let{n,d}of mel){let s=d*bd;if(n&&NF[n])pn(NF[n],t,s*.85);t+=s}mto=setTimeout(sched,ld*1000-100)}
 function startM(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();if(actx.state=='suspended')actx.resume();mon=1;sched();document.getElementById('mb').textContent='🎵'}
