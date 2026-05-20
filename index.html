@@ -51,10 +51,13 @@ function fl(){cx.clearRect(0,0,cv.width,cv.height);cx.drawImage(bf,0,0,W,H,0,0,W
 function P(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w||1,h||1)}
 
 // ── Image assets ──
-const S={},IMGS=['title','ski','cabin','boy','boySki','girl','girlSki','dog','house','treeL','treeS'];
-const IMG_SRC={title:'bg-title.png',ski:'bg-ski.png',cabin:'bg-cabin.png',boy:'boy-stand.png',boySki:'boy-ski.png',girl:'girl-stand.png',girlSki:'girl-ski.png',dog:'dog.png',house:'house.png',treeL:'tree-large.png',treeS:'tree-small.png'};
-let loaded=0,allLoaded=false;
-IMGS.forEach(k=>{let img=new Image();img.onload=img.onerror=()=>{loaded++;if(loaded>=IMGS.length)allLoaded=true};img.src=IMG_SRC[k];S[k]=img});
+const S={};
+function loadImg(k,src){let img=new Image();img.src=src;S[k]=img}
+loadImg('title','bg-title.png');loadImg('ski','bg-ski.png');loadImg('cabin','bg-cabin.png');
+loadImg('boy','boy-stand.png');loadImg('boySki','boy-ski.png');
+loadImg('girl','girl-stand.png');loadImg('girlSki','girl-ski.png');
+loadImg('dog','dog.png');loadImg('house','house.png');
+loadImg('treeL','tree-large.png');loadImg('treeS','tree-small.png');
 function drSpr(key,x,y,h,flip){let img=S[key];if(!img||!img.complete)return;let w=h*img.width/img.height;let dx=x|0,dy=y|0,dw=w|0,dh=h|0;if(flip){bx.save();bx.translate(dx+dw/2,dy+dh/2);bx.scale(-1,1);bx.drawImage(img,0,0,img.width,img.height,-dw/2,-dh/2,dw,dh);bx.restore()}else{bx.drawImage(img,0,0,img.width,img.height,dx,dy,dw,dh)}}
 
 // ── Sprite config from scene-data.js or defaults ──
@@ -263,23 +266,7 @@ function loop(ts){let dt=Math.min((ts-lt)/1000,.1);lt=ts;upd(dt);rndr();fl();req
 
 // Init
 addEventListener('click',function s(){if(bgm.paused)startM()},{once:1});
-// Show loading screen until all assets ready (with 6s timeout)
-let loadStart=Date.now();
-function loadingLoop(ts){
-  btx.fillStyle='#1a1a1a';btx.fillRect(0,0,W,H);
-  btx.fillStyle='#ffffff';btx.font='14px "Courier New",monospace';
-  let txt='Loading...';
-  btx.fillText(txt,240-btx.measureText(txt).width/2,130);
-  let pct=Math.round(loaded/IMGS.length*100);
-  btx.fillText(pct+'%',240-btx.measureText(pct+'%').width/2,155);
-  PR(140,168,200,6,'#555');
-  PR(140,168,Math.max(2,200*pct/100|0),6,'#c8956c');
-  flip();
-  let timedOut=(Date.now()-loadStart)>6000;
-  if(allLoaded||timedOut){requestAnimationFrame(loop);return}
-  requestAnimationFrame(loadingLoop);
-}
-requestAnimationFrame(loadingLoop);
+window.addEventListener('load',()=>requestAnimationFrame(loop));
 </script>
 </body>
 </html>
