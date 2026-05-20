@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>精灵位置编辑器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a1a;color:#ddd;font-family:monospace;display:flex;height:100vh}
+#panel{width:260px;padding:16px;overflow-y:auto;background:#2a2a2a;border-right:2px solid #444}
+#panel h3{color:#f0b860;margin-bottom:12px}
+.scene-btn{display:block;width:100%;padding:8px;margin:4px 0;background:#3a3a3a;border:1px solid #555;color:#ddd;cursor:pointer;text-align:left;font-family:monospace}
+.scene-btn.active{background:#5a4030;border-color:#f0b860}
+.sprite-item{margin:8px 0;padding:8px;background:#333;border-radius:4px}
+.sprite-item label{display:block;font-size:11px;color:#aaa;margin-bottom:2px}
+.sprite-item input{width:100%;background:#444;border:1px solid #666;color:#fff;padding:4px;font-family:monospace;margin-bottom:4px}
+.sprite-item .val{font-size:10px;color:#888}
+#canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid #555}
+#info{position:absolute;bottom:8px;left:8px;font-size:12px;color:#888;background:rgba(0,0,0,.7);padding:4px 8px}
+#help{position:absolute;top:8px;right:8px;font-size:11px;color:#888;background:rgba(0,0,0,.7);padding:4px 8px}
+</style>
+</head>
+<body>
+<div id="panel">
+  <h3>精灵位置编辑器</h3>
+  <button class="scene-btn active" onclick="switchScene(0)">标题画面</button>
+  <button class="scene-btn" onclick="switchScene(1)">滑雪场景</button>
+  <button class="scene-btn" onclick="switchScene(2)">木屋场景</button>
+  <div id="sprite-panel"></div>
+  <p style="font-size:10px;color:#888;margin-top:12px">拖拽精灵调整位置<br>滚轮调整大小<br>点击精灵选中</p>
+</div>
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+  <div id="info">点击精灵查看坐标</div>
+  <div id="help">拖拽=移动 | 滚轮=缩放</div>
+</div>
+<script>
+const W=480, H=270;
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let scale=3;
+
+const scenes=[
+  { name:'标题', bg:'bg-title.png', sprites:[
+    {key:'boy',src:'boy-stand.png',x:175,y:190,h:36},
+    {key:'girl',src:'girl-stand.png',x:210,y:190,h:36},
+    {key:'dog',src:'dog.png',x:250,y:200,h:22},
+  ]},
+  { name:'滑雪', bg:'bg-ski.png', sprites:[
+    {key:'boySki',src:'boy-ski.png',x:155,y:150,h:34},
+    {key:'girlSki',src:'girl-ski.png',x:185,y:150,h:34},
+    {key:'dog',src:'dog.png',x:250,y:156,h:22},
+  ]},
+  { name:'木屋', bg:'bg-cabin.png', sprites:[
+    {key:'boy',src:'boy-stand.png',x:80,y:162,h:34},
+    {key:'girl',src:'girl-stand.png',x:110,y:162,h:34},
+    {key:'dog',src:'dog.png',x:290,y:178,h:22},
+  ]},
+];
+
+let curScene=0;
+let selected=null;
+let dragging=null;
+let images={};
+let dragOx=0,dragOy=0;
+
+function resize(){
+  let maxW=innerWidth-280,maxH=innerHeight;
+  scale=Math.min(Math.floor(maxW/W),Math.floor(maxH/H),4);
+  canvas.width=W*scale;canvas.height=H*scale;
+  ctx.imageSmoothingEnabled=false;
+}
+resize();addEventListener('resize',resize);
+
+// Preload all images
+for(let sc of scenes){
+  let img=new Image();img.src=sc.bg;images[sc.bg]=img;
+  for(let sp of sc.sprites){let img=new Image();img.src=sp.src;images[sp.src]=img}
+}
+
+function switchScene(i){
+  curScene=i;
+  document.querySelectorAll('.scene-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  selected=null;
+  renderPanel();
+}
+
+function renderPanel(){
+  let html='';
+  let sps=scenes[curScene].sprites;
+  for(let i=0;i<sps.length;i++){
+    let sp=sps[i];
+    let sel=i===selected?'background:#4a4a30;border:1px solid #f0b860':'';
+    html+=`<div class="sprite-item" style="${sel}" onclick="selectSprite(${i})">
+      <label>${sp.key} (${sp.src})</label>
+      <span class="val">x:</span><input type="number" value="${sp.x}" onchange="updateVal(${i},'x',this.value)">
+      <span class="val">y:</span><input type="number" value="${sp.y}" onchange="updateVal(${i},'y',this.value)">
+      <span class="val">h:</span><input type="number" value="${sp.h}" onchange="updateVal(${i},'h',this.value)">
+    </div>`;
+  }
+  document.getElementById('sprite-panel').innerHTML=html;
+}
+
+function selectSprite(i){selected=i;renderPanel()}
+function updateVal(i,prop,val){scenes[curScene].sprites[i][prop]=+val}
+
+function getClickSprite(mx,my){
+  let sps=scenes[curScene].sprites;
+  for(let i=sps.length-1;i>=0;i--){
+    let sp=sps[i];
+    let img=images[sp.src];
+    if(!img)continue;
+    let w=sp.h*img.width/img.height;
+    if(mx>=sp.x&&mx<=sp.x+w&&my>=sp.y&&my<=sp.y+sp.h)return i;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown',e=>{
+  let rect=canvas.getBoundingClientRect();
+  let mx=(e.clientX-rect.left)/scale,my=(e.clientY-rect.top)/scale;
+  let idx=getClickSprite(mx,my);
+  if(idx!==null){
+    selected=idx;
+    dragging=idx;
+    let sp=scenes[curScene].sprites[idx];
+    dragOx=mx-sp.x;dragOy=my-sp.y;
+    renderPanel();
+  }
+});
+canvas.addEventListener('mousemove',e=>{
+  let rect=canvas.getBoundingClientRect();
+  let mx=(e.clientX-rect.left)/scale,my=(e.clientY-rect.top)/scale;
+  if(dragging!==null){
+    let sp=scenes[curScene].sprites[dragging];
+    sp.x=Math.round(mx-dragOx);
+    sp.y=Math.round(my-dragOy);
+    renderPanel();
+  }
+  document.getElementById('info').textContent=`鼠标: (${Math.round(mx)}, ${Math.round(my)})`;
+});
+canvas.addEventListener('mouseup',()=>{dragging=null});
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  let rect=canvas.getBoundingClientRect();
+  let mx=(e.clientX-rect.left)/scale,my=(e.clientY-rect.top)/scale;
+  let idx=getClickSprite(mx,my);
+  if(idx!==null){
+    let sp=scenes[curScene].sprites[idx];
+    sp.h=Math.max(4,sp.h+(e.deltaY>0?-2:2));
+    sp.h=Math.round(sp.h);
+    renderPanel();
+  }
+},{passive:false});
+
+function render(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  let sc=scenes[curScene];
+  let bgImg=images[sc.bg];
+  if(bgImg&&bgImg.complete)ctx.drawImage(bgImg,0,0,W*scale,H*scale);
+
+  for(let i=0;i<sc.sprites.length;i++){
+    let sp=sc.sprites[i];
+    let img=images[sp.src];
+    if(!img||!img.complete)continue;
+    let w=sp.h*img.width/img.height;
+    let sx=sp.x*scale,sy=sp.y*scale,sw=w*scale,sh=sp.h*scale;
+    ctx.drawImage(img,0,0,img.width,img.height,sx,sy,sw,sh);
+    if(i===selected){
+      ctx.strokeStyle='#f0b860';ctx.lineWidth=2;
+      ctx.strokeRect(sx-1,sy-1,sw+2,sh+2);
+      // anchor point circle
+      ctx.fillStyle='#f0b860';
+      ctx.beginPath();ctx.arc(sx, sy, 4, 0, Math.PI*2);ctx.fill();
+    }
+  }
+  requestAnimationFrame(render);
+}
+
+renderPanel();
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
