@@ -50,17 +50,14 @@ const bx=bf.getContext('2d');bx.imageSmoothingEnabled=false;
 function fl(){cx.clearRect(0,0,cv.width,cv.height);cx.drawImage(bf,0,0,W,H,0,0,W*sc,H*sc)}
 function P(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w||1,h||1)}
 
-// ── Image assets (lazy-load backgrounds) ──
+// ── Image assets ──
 const S={};
 function loadImg(k,src){let img=new Image();img.src=src;S[k]=img}
-// Preload title background + all sprites immediately
-loadImg('title','bg-title.png');
+loadImg('title','bg-title.png');loadImg('ski','bg-ski.png');loadImg('cabin','bg-cabin.png');
 loadImg('boy','boy-stand.png');loadImg('boySki','boy-ski.png');
 loadImg('girl','girl-stand.png');loadImg('girlSki','girl-ski.png');
 loadImg('dog','dog.png');loadImg('house','house.png');
 loadImg('treeL','tree-large.png');loadImg('treeS','tree-small.png');
-// Lazy-load ski & cabin backgrounds
-function ensureBg(k,src){if(!S[k])loadImg(k,src)}
 function drSpr(key,x,y,h,flip){let img=S[key];if(!img||!img.complete)return;let w=h*img.width/img.height;let dx=x|0,dy=y|0,dw=w|0,dh=h|0;if(flip){bx.save();bx.translate(dx+dw/2,dy+dh/2);bx.scale(-1,1);bx.drawImage(img,0,0,img.width,img.height,-dw/2,-dh/2,dw,dh);bx.restore()}else{bx.drawImage(img,0,0,img.width,img.height,dx,dy,dw,dh)}}
 
 // ── Sprite config from scene-data.js or defaults ──
@@ -202,8 +199,7 @@ function renderTitle(){
 }
 
 function renderSki(){
-  ensureBg('ski','bg-ski.png');
-  if(S['ski']&&S['ski'].complete)bx.drawImage(S['ski'],0,0,W,H);
+  bx.drawImage(S['ski'],0,0,W,H);
   let t=timer;
   let ca=_a(1,'boySki'),cg=_a(1,'girlSki'),cd=_a(1,'dog');
   let bh=_h(1,'boySki',34),gh=_h(1,'girlSki',34),dh=_h(1,'dog',22);
@@ -224,8 +220,7 @@ function renderSki(){
 }
 
 function renderCab(){
-  ensureBg('cabin','bg-cabin.png');
-  if(S['cabin']&&S['cabin'].complete)bx.drawImage(S['cabin'],0,0,W,H);
+  bx.drawImage(S['cabin'],0,0,W,H);
   drSpr('boy',_x(2,'boy',80),_y(2,'boy',162),_h(2,'boy',34),_f(2,'boy',false));
   drSpr('girl',_x(2,'girl',110),_y(2,'girl',162),_h(2,'girl',34),_f(2,'girl',false));
   let db=Math.sin(Date.now()/300)*.5;drSpr('dog',_x(2,'dog',290)+db,_y(2,'dog',178),_h(2,'dog',22),_f(2,'dog',false));
