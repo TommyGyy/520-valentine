@@ -50,12 +50,14 @@ function fl(){cx.clearRect(0,0,cv.width,cv.height);cx.drawImage(bf,0,0,W,H,0,0,W
 function P(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w||1,h||1)}
 
 // ── Image assets ──
-const imgTitle=new Image();imgTitle.src='bg-title.png';
-const imgSki=new Image();imgSki.src='bg-ski.png';
-const imgCabin=new Image();imgCabin.src='bg-cabin.png';
-let imgsReady=0;const imgsNeeded=3;
-function onImgLoad(){imgsReady++;};
-imgTitle.onload=onImgLoad;imgSki.onload=onImgLoad;imgCabin.onload=onImgLoad;
+const S={};
+function loadImg(k,src){let img=new Image();img.src=src;S[k]=img}
+loadImg('title','bg-title.png');loadImg('ski','bg-ski.png');loadImg('cabin','bg-cabin.png');
+loadImg('boy','boy-stand.png');loadImg('boySki','boy-ski.png');
+loadImg('girl','girl-stand.png');loadImg('girlSki','girl-ski.png');
+loadImg('dog','dog.png');loadImg('house','house.png');
+loadImg('treeL','tree-large.png');loadImg('treeS','tree-small.png');
+function drSpr(key,x,y,h){let img=S[key];if(!img||!img.complete)return;let w=h*img.width/img.height;bx.drawImage(img,0,0,img.width,img.height,x|0,y|0,w|0,h|0)}
 function PR(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w,h)}
 function PC(cx,cy,r,c){bx.fillStyle=c;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r)bx.fillRect(cx+dx|0,cy+dy|0,1,1)}
 
@@ -154,7 +156,8 @@ let scrollX=0,confess=0,confTm=0,hrts=[];
 
 // Scene rendering
 function renderTitle(){
-  bx.drawImage(imgTitle,0,0,W,H);
+  bx.drawImage(S['title'],0,0,W,H);
+  drSpr('boy',175,190,36);drSpr('girl',210,190,36);drSpr('dog',250,200,22);
   let tx=170,ty=72;
   let L5=[[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,1]];
   let L2=[[1,1,1,1,1],[0,0,0,0,1],[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,1]];
@@ -164,17 +167,16 @@ function renderTitle(){
   drHeart(tx+62,ty-4,2);
   dL(L5,tx+76,ty,C.coatR);dL(L2,tx+94,ty,C.txt);dL(L0,tx+115,ty,C.txt);
   bx.font='9px "Courier New",monospace';bx.fillStyle=C.txt;
-  let sub='一段像素旅程 · 为你而作';
-  bx.fillText(sub,240-bx.measureText(sub).width/2,122);
+  bx.fillText('一段像素旅程 · 为你而作',240-bx.measureText('一段像素旅程 · 为你而作').width/2,122);
   let a=(Math.sin(Date.now()/800)+1)/2;bx.fillStyle=`rgba(74,48,32,${.4+a*.6})`;
   bx.fillText('— 点击任意处开始 —',240-bx.measureText('— 点击任意处开始 —').width/2,198);
   drSnow()
 }
 
 function renderSki(){
-  bx.drawImage(imgSki,0,0,W,H);
-  drCh(155,148,C.coatB,'ski');drCh(185,150,C.coatR,'ski');
-  drDog(250,156+Math.sin(Date.now()/180)*2);
+  bx.drawImage(S['ski'],0,0,W,H);
+  drSpr('boySki',155,150,34);drSpr('girlSki',185,150,34);
+  let db=Math.sin(Date.now()/180)*2;drSpr('dog',250,156+db,22);
   for(let i=0;i<6;i++){let lx=(i*43+Date.now()/80)%(W+30)-15;P(lx|0,125+i*10,6+i%2*3,1,'rgba(255,255,255,.35)')}
   let ba=(Math.sin(Date.now()/600)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
   bx.font='10px "Courier New",monospace';bx.fillText('▼ 点击继续',200,258);
@@ -182,9 +184,9 @@ function renderSki(){
 }
 
 function renderCab(){
-  bx.drawImage(imgCabin,0,0,W,H);
-  drCh(80,162,C.coatB,'stand');drCh(110,164,C.coatR,'stand');
-  let db=Math.sin(Date.now()/300)*.5;drDog(290+db,180);
+  bx.drawImage(S['cabin'],0,0,W,H);
+  drSpr('boy',80,162,34);drSpr('girl',110,162,34);
+  let db=Math.sin(Date.now()/300)*.5;drSpr('dog',290+db,178,22);
   for(let h of hrts){h.x+=h.vx*.016;h.y+=h.vy*.016;h.vy-=15*.016;h.life-=.016;let a=Math.min(h.life/2,1);bx.globalAlpha=a;PR(h.x|0,h.y|0,h.s,h.s,C.heart)}
   bx.globalAlpha=1;hrts=hrts.filter(h=>h.life>0);
   if(confess&&(confTm+=.016)>.8){
