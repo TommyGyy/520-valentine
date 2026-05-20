@@ -21,6 +21,7 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;border-radius:4px}
 <audio id="bgm" loop preload="auto" src="魂狼 - 宝可梦 - 未白镇 (8-bit ver.).mp3"></audio>
 <button id="mb" onclick="toggleMusic()">🔇</button>
 <div class="dlg" id="dlg"><div class="t" id="dt"></div><div class="hint">点击继续</div></div>
+<script src="scene-data.js"></script>
 <script>
 const W=480,H=270;
 const C={
@@ -58,6 +59,19 @@ loadImg('girl','girl-stand.png');loadImg('girlSki','girl-ski.png');
 loadImg('dog','dog.png');loadImg('house','house.png');
 loadImg('treeL','tree-large.png');loadImg('treeS','tree-small.png');
 function drSpr(key,x,y,h,flip){let img=S[key];if(!img||!img.complete)return;let w=h*img.width/img.height;let dx=x|0,dy=y|0,dw=w|0,dh=h|0;if(flip){bx.save();bx.translate(dx+dw/2,dy+dh/2);bx.scale(-1,1);bx.drawImage(img,0,0,img.width,img.height,-dw/2,-dh/2,dw,dh);bx.restore()}else{bx.drawImage(img,0,0,img.width,img.height,dx,dy,dw,dh)}}
+
+// ── Sprite config from scene-data.js or defaults ──
+const DEFAULTS=[
+  {name:'标题',sprites:[{key:'boy',x:175,y:190,h:36,flip:false},{key:'girl',x:210,y:190,h:36,flip:false},{key:'dog',x:250,y:200,h:22,flip:false}]},
+  {name:'滑雪',sprites:[{key:'boySki',x:-60,y:148,h:34,flip:false,anim:{startX:-60,endX:500,dur:10,loop:true}},{key:'girlSki',x:-20,y:148,h:34,flip:false,anim:{startX:-20,endX:500,dur:10,loop:true}},{key:'dog',x:50,y:154,h:22,flip:false,anim:{startX:50,endX:500,dur:8,loop:true}}]},
+  {name:'木屋',sprites:[{key:'boy',x:80,y:162,h:34,flip:false},{key:'girl',x:110,y:162,h:34,flip:false},{key:'dog',x:290,y:178,h:22,flip:false}]},
+];
+function sd(scene,key){let data=(window.SPRITE_DATA||DEFAULTS)[scene];return data?data.sprites.find(s=>s.key===key):null}
+function _x(sc,key,def){let s=sd(sc,key);return s?s.x:def}
+function _y(sc,key,def){let s=sd(sc,key);return s?s.y:def}
+function _h(sc,key,def){let s=sd(sc,key);return s?s.h:def}
+function _f(sc,key,def){let s=sd(sc,key);return s?s.flip:def}
+function _a(sc,key){let s=sd(sc,key);return s?s.anim:null}
 function PR(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w,h)}
 function PC(cx,cy,r,c){bx.fillStyle=c;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r)bx.fillRect(cx+dx|0,cy+dy|0,1,1)}
 
@@ -156,7 +170,9 @@ let scrollX=0,confess=0,confTm=0,hrts=[];
 // Scene rendering
 function renderTitle(){
   bx.drawImage(S['title'],0,0,W,H);
-  drSpr('boy',175,190,36);drSpr('girl',210,190,36);drSpr('dog',250,200,22);
+  drSpr('boy',_x(0,'boy',175),_y(0,'boy',190),_h(0,'boy',36),_f(0,'boy',false));
+  drSpr('girl',_x(0,'girl',210),_y(0,'girl',190),_h(0,'girl',36),_f(0,'girl',false));
+  drSpr('dog',_x(0,'dog',250),_y(0,'dog',200),_h(0,'dog',22),_f(0,'dog',false));
   let tx=170,ty=72;
   let L5=[[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,1]];
   let L2=[[1,1,1,1,1],[0,0,0,0,1],[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,1]];
@@ -174,15 +190,15 @@ function renderTitle(){
 
 function renderSki(){
   bx.drawImage(S['ski'],0,0,W,H);
-  // Animated left-to-right looping
   let t=Date.now()/1000;
-  let cycle=W+200;
-  let boyX=((t*55)%cycle)-100;if(boyX<-60)boyX+=cycle;
-  let girlX=((t*58+40)%cycle)-100;if(girlX<-60)girlX+=cycle;
-  let dogX=((t*65+90)%cycle)-100;if(dogX<-60)dogX+=cycle;
+  let ca=_a(1,'boySki'),cg=_a(1,'girlSki'),cd=_a(1,'dog');
+  let bX=ca?ca.startX+(ca.endX-ca.startX)*(((t%ca.dur)+ca.dur)%ca.dur/ca.dur):_x(1,'boySki',100);
+  let gX=cg?cg.startX+(cg.endX-cg.startX)*(((t%cg.dur)+cg.dur)%cg.dur/cg.dur):_x(1,'girlSki',130);
+  let dX=cd?cd.startX+(cd.endX-cd.startX)*(((t%cd.dur)+cd.dur)%cd.dur/cd.dur):_x(1,'dog',180);
   let db=Math.sin(t*6)*2;
-  drSpr('boySki',boyX,150,34);drSpr('girlSki',girlX,150,34);
-  drSpr('dog',dogX,156+db,22);
+  drSpr('boySki',bX,_y(1,'boySki',148),_h(1,'boySki',34),_f(1,'boySki',false));
+  drSpr('girlSki',gX,_y(1,'girlSki',148),_h(1,'girlSki',34),_f(1,'girlSki',false));
+  drSpr('dog',dX,_y(1,'dog',154)+db,_h(1,'dog',22),_f(1,'dog',false));
   for(let i=0;i<6;i++){let lx=(i*43+t*60)%(W+30)-15;P(lx|0,125+i*10,6+i%2*3,1,'rgba(255,255,255,.35)')}
   let ba=(Math.sin(t*3)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
   bx.font='10px "Courier New",monospace';bx.fillText('▼ 点击继续',200,258);
@@ -191,8 +207,9 @@ function renderSki(){
 
 function renderCab(){
   bx.drawImage(S['cabin'],0,0,W,H);
-  drSpr('boy',80,162,34);drSpr('girl',110,162,34);
-  let db=Math.sin(Date.now()/300)*.5;drSpr('dog',290+db,178,22);
+  drSpr('boy',_x(2,'boy',80),_y(2,'boy',162),_h(2,'boy',34),_f(2,'boy',false));
+  drSpr('girl',_x(2,'girl',110),_y(2,'girl',162),_h(2,'girl',34),_f(2,'girl',false));
+  let db=Math.sin(Date.now()/300)*.5;drSpr('dog',_x(2,'dog',290)+db,_y(2,'dog',178),_h(2,'dog',22),_f(2,'dog',false));
   for(let h of hrts){h.x+=h.vx*.016;h.y+=h.vy*.016;h.vy-=15*.016;h.life-=.016;let a=Math.min(h.life/2,1);bx.globalAlpha=a;PR(h.x|0,h.y|0,h.s,h.s,C.heart)}
   bx.globalAlpha=1;hrts=hrts.filter(h=>h.life>0);
   if(confess&&(confTm+=.016)>.8){

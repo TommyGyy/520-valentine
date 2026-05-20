@@ -266,15 +266,15 @@ function syncInputs(){
 }
 
 function saveScene(){
-  let sc=scenes[curScene];
-  let data={scene:sc.name,sprites:sc.sprites.map(sp=>({
+  let data=scenes.map(sc=>({name:sc.name,sprites:sc.sprites.map(sp=>({
     key:sp.key,src:sp.src,x:sp.x,y:sp.y,h:sp.h,flip:sp.flip,
     anim:{enabled:sp.anim.enabled,startX:sp.anim.startX,endX:sp.anim.endX,dur:sp.anim.dur,loop:sp.anim.loop}
-  }))};
-  let json=JSON.stringify(data,null,2);
-  // Copy to clipboard
-  navigator.clipboard.writeText(json).then(()=>alert('已复制到剪贴板!')).catch(()=>alert(json));
-  console.log(json);
+  }))}));
+  let js='// Auto-generated sprite data — edit via sprite-editor.html\nwindow.SPRITE_DATA='+JSON.stringify(data,null,2)+';\n';
+  let blob=new Blob([js],{type:'text/javascript'});
+  let a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='scene-data.js';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
 function render(ts){
