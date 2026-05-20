@@ -2,11 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>520 ❤</title>
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#2c1810;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -24,7 +21,6 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;border-radius:4px}
 <audio id="bgm" loop preload="auto" src="bgm-compressed.m4a"></audio>
 <button id="mb" onclick="toggleMusic()">🔇</button>
 <div class="dlg" id="dlg"><div class="t" id="dt"></div><div class="hint">点击继续</div></div>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')</script>
 <script src="scene-data.js"></script>
 <script>
 const W=480,H=270;
