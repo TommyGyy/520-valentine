@@ -1,118 +1,140 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>精灵位置编辑器</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>精灵编辑器</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a1a;color:#ddd;font-family:monospace;display:flex;height:100vh}
-#panel{width:260px;padding:16px;overflow-y:auto;background:#2a2a2a;border-right:2px solid #444}
-#panel h3{color:#f0b860;margin-bottom:12px}
+#panel{width:300px;padding:16px;overflow-y:auto;background:#2a2a2a;border-right:2px solid #444}
+#panel h3{color:#f0b860;margin-bottom:8px}
 .scene-btn{display:block;width:100%;padding:8px;margin:4px 0;background:#3a3a3a;border:1px solid #555;color:#ddd;cursor:pointer;text-align:left;font-family:monospace}
 .scene-btn.active{background:#5a4030;border-color:#f0b860}
-.sprite-item{margin:8px 0;padding:8px;background:#333;border-radius:4px}
-.sprite-item label{display:block;font-size:11px;color:#aaa;margin-bottom:2px}
-.sprite-item input{width:100%;background:#444;border:1px solid #666;color:#fff;padding:4px;font-family:monospace;margin-bottom:4px}
-.sprite-item .val{font-size:10px;color:#888}
+.sp{background:#333;border-radius:4px;padding:8px;margin:6px 0}
+.sp.sel{border:1px solid #f0b860;background:#3a3028}
+.sp .name{font-size:12px;font-weight:bold;margin-bottom:4px}
+.sp .row{display:flex;gap:4px;align-items:center;margin:2px 0}
+.sp .row label{font-size:10px;color:#aaa;width:16px;text-align:right}
+.sp input[type=number]{width:58px;background:#444;border:1px solid #666;color:#fff;padding:2px 4px;font-family:monospace;font-size:11px}
+.sp input[type=checkbox]{margin-right:4px}
+.sp .anim{background:#2a2a2a;padding:6px;margin-top:6px;border-radius:3px}
+.sp .anim .row label{width:28px}
+#controls{background:#333;padding:8px;margin:10px 0;border-radius:4px}
+#controls button{background:#5a4030;border:1px solid #f0b860;color:#fff;padding:6px 12px;cursor:pointer;font-family:monospace;margin:2px}
+#controls button:hover{background:#7a5040}
+#time-slider{width:100%;margin-top:6px}
 #canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
 canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid #555}
-#info{position:absolute;bottom:8px;left:8px;font-size:12px;color:#888;background:rgba(0,0,0,.7);padding:4px 8px}
-#help{position:absolute;top:8px;right:8px;font-size:11px;color:#888;background:rgba(0,0,0,.7);padding:4px 8px}
+#info{position:absolute;bottom:8px;left:8px;font-size:12px;color:#888;background:rgba(0,0,0,.7);padding:4px 8px;pointer-events:none}
+#help{position:absolute;top:8px;right:8px;font-size:11px;color:#888;background:rgba(0,0,0,.7);padding:4px 8px;pointer-events:none}
 </style>
 </head>
 <body>
 <div id="panel">
-  <h3>精灵位置编辑器</h3>
+  <h3>精灵编辑器</h3>
   <button class="scene-btn active" onclick="switchScene(0)">标题画面</button>
   <button class="scene-btn" onclick="switchScene(1)">滑雪场景</button>
   <button class="scene-btn" onclick="switchScene(2)">木屋场景</button>
+  <div id="controls">
+    <button onclick="togglePlay()" id="btn-play">▶ 播放动画</button>
+    <button onclick="resetAnim()">↺ 重置</button>
+    <div class="row" style="margin-top:4px"><label style="font-size:10px;color:#aaa">时间: <span id="time-label">0.0s</span></label></div>
+    <input type="range" id="time-slider" min="0" max="1000" value="0" oninput="seekAnim(this.value)">
+  </div>
   <div id="sprite-panel"></div>
-  <p style="font-size:10px;color:#888;margin-top:12px">拖拽精灵调整位置<br>滚轮调整大小<br>点击精灵选中</p>
+  <p style="font-size:10px;color:#888;margin-top:12px">拖拽精灵=移动<br>滚轮=缩放 | F键=翻转</p>
 </div>
 <div id="canvas-wrap">
   <canvas id="c"></canvas>
   <div id="info">点击精灵查看坐标</div>
-  <div id="help">拖拽=移动 | 滚轮=缩放</div>
+  <div id="help">拖拽=移动 | 滚轮=缩放 | F=翻转</div>
 </div>
 <script>
-const W=480, H=270;
+const W=480,H=270;
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
 let scale=3;
 
-const scenes=[
-  { name:'标题', bg:'bg-title.png', sprites:[
-    {key:'boy',src:'boy-stand.png',x:175,y:190,h:36},
-    {key:'girl',src:'girl-stand.png',x:210,y:190,h:36},
-    {key:'dog',src:'dog.png',x:250,y:200,h:22},
-  ]},
-  { name:'滑雪', bg:'bg-ski.png', sprites:[
-    {key:'boySki',src:'boy-ski.png',x:155,y:150,h:34},
-    {key:'girlSki',src:'girl-ski.png',x:185,y:150,h:34},
-    {key:'dog',src:'dog.png',x:250,y:156,h:22},
-  ]},
-  { name:'木屋', bg:'bg-cabin.png', sprites:[
-    {key:'boy',src:'boy-stand.png',x:80,y:162,h:34},
-    {key:'girl',src:'girl-stand.png',x:110,y:162,h:34},
-    {key:'dog',src:'dog.png',x:290,y:178,h:22},
-  ]},
-];
+let curScene=0,selected=null,dragging=null,images={},dragOx=0,dragOy=0;
+let playing=false,animTime=0,lastFrame=0;
 
-let curScene=0;
-let selected=null;
-let dragging=null;
-let images={};
-let dragOx=0,dragOy=0;
+const scenes=[
+{name:'标题',bg:'bg-title.png',sprites:[
+  {key:'boy',src:'boy-stand.png',x:175,y:190,h:36,flip:false,anim:{enabled:false,startX:175,endX:175,dur:5,loop:true}},
+  {key:'girl',src:'girl-stand.png',x:210,y:190,h:36,flip:false,anim:{enabled:false,startX:210,endX:210,dur:5,loop:true}},
+  {key:'dog',src:'dog.png',x:250,y:200,h:22,flip:false,anim:{enabled:false,startX:250,endX:250,dur:5,loop:true}},
+]},
+{name:'滑雪',bg:'bg-ski.png',sprites:[
+  {key:'boySki',src:'boy-ski.png',x:-60,y:148,h:34,flip:false,anim:{enabled:true,startX:-60,endX:500,dur:10,loop:true}},
+  {key:'girlSki',src:'girl-ski.png',x:-20,y:148,h:34,flip:false,anim:{enabled:true,startX:-20,endX:500,dur:10,loop:true}},
+  {key:'dog',src:'dog.png',x:50,y:154,h:22,flip:false,anim:{enabled:true,startX:50,endX:500,dur:8,loop:true}},
+]},
+{name:'木屋',bg:'bg-cabin.png',sprites:[
+  {key:'boy',src:'boy-stand.png',x:80,y:162,h:34,flip:false,anim:{enabled:false,startX:80,endX:80,dur:5,loop:true}},
+  {key:'girl',src:'girl-stand.png',x:110,y:162,h:34,flip:false,anim:{enabled:false,startX:110,endX:110,dur:5,loop:true}},
+  {key:'dog',src:'dog.png',x:290,y:178,h:22,flip:false,anim:{enabled:false,startX:290,endX:290,dur:5,loop:true}},
+]}];
 
 function resize(){
-  let maxW=innerWidth-280,maxH=innerHeight;
+  let maxW=innerWidth-320,maxH=innerHeight;
   scale=Math.min(Math.floor(maxW/W),Math.floor(maxH/H),4);
   canvas.width=W*scale;canvas.height=H*scale;
   ctx.imageSmoothingEnabled=false;
 }
 resize();addEventListener('resize',resize);
-
-// Preload all images
 for(let sc of scenes){
   let img=new Image();img.src=sc.bg;images[sc.bg]=img;
   for(let sp of sc.sprites){let img=new Image();img.src=sp.src;images[sp.src]=img}
 }
 
-function switchScene(i){
-  curScene=i;
-  document.querySelectorAll('.scene-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
-  selected=null;
-  renderPanel();
+function switchScene(i){curScene=i;document.querySelectorAll('.scene-btn').forEach((b,j)=>b.classList.toggle('active',j===i));selected=null;playing=false;animTime=0;renderPanel();updatePlayBtn()}
+function togglePlay(){playing=!playing;if(playing)lastFrame=performance.now();updatePlayBtn()}
+function updatePlayBtn(){document.getElementById('btn-play').textContent=playing?'⏸ 暂停':'▶ 播放动画'}
+function resetAnim(){animTime=0;playing=false;updatePlayBtn();document.getElementById('time-slider').value=0;document.getElementById('time-label').textContent='0.0s'}
+function seekAnim(v){animTime=+v/1000*getMaxDur();document.getElementById('time-label').textContent=animTime.toFixed(1)+'s'}
+function getMaxDur(){let max=5;for(let sp of scenes[curScene].sprites){let a=sp.anim;if(a.enabled){let d=a.loop?a.dur:a.dur*2;if(d>max)max=d}}return max}
+
+function getSpriteX(sp,t){
+  let a=sp.anim;
+  if(!a.enabled||!playing)return sp.x;
+  let dur=a.dur;
+  if(a.loop){
+    let p=((t%dur)+dur)%dur/dur;
+    return a.startX+(a.endX-a.startX)*p;
+  }else{
+    let p=Math.min(1,Math.max(0,t/dur));
+    return a.startX+(a.endX-a.startX)*p;
+  }
 }
 
 function renderPanel(){
-  let html='';
-  let sps=scenes[curScene].sprites;
+  let html='';let sps=scenes[curScene].sprites;
   for(let i=0;i<sps.length;i++){
-    let sp=sps[i];
-    let sel=i===selected?'background:#4a4a30;border:1px solid #f0b860':'';
-    html+=`<div class="sprite-item" style="${sel}" onclick="selectSprite(${i})">
-      <label>${sp.key} (${sp.src})</label>
-      <span class="val">x:</span><input type="number" value="${sp.x}" onchange="updateVal(${i},'x',this.value)">
-      <span class="val">y:</span><input type="number" value="${sp.y}" onchange="updateVal(${i},'y',this.value)">
-      <span class="val">h:</span><input type="number" value="${sp.h}" onchange="updateVal(${i},'h',this.value)">
+    let sp=sps[i],sel=i===selected?' sel':'';
+    let a=sp.anim;
+    html+=`<div class="sp${sel}" onclick="selectSprite(${i})">
+      <div class="name">${sp.key} <span style="color:#888;font-size:10px">${sp.src}</span></div>
+      <div class="row"><label>x</label><input type="number" value="${sp.x}" onchange="updateVal(${i},'x',this.value)"><label>y</label><input type="number" value="${sp.y}" onchange="updateVal(${i},'y',this.value)"><label>h</label><input type="number" value="${sp.h}" onchange="updateVal(${i},'h',this.value)"></div>
+      <div class="row"><input type="checkbox" id="flip${i}" ${sp.flip?'checked':''} onchange="updateVal(${i},'flip',this.checked)"><label for="flip${i}" style="width:auto">水平翻转</label></div>
+      <div class="anim"><div class="row"><input type="checkbox" id="ena${i}" ${a.enabled?'checked':''} onchange="updateAnim(${i},'enabled',this.checked)"><label for="ena${i}" style="width:auto;color:#f0b860">动画</label></div>
+      <div class="row"><label>起x</label><input type="number" value="${a.startX}" onchange="updateAnim(${i},'startX',+this.value)"><label>止x</label><input type="number" value="${a.endX}" onchange="updateAnim(${i},'endX',+this.value)"></div>
+      <div class="row"><label>时长</label><input type="number" value="${a.dur}" onchange="updateAnim(${i},'dur',+this.value)" step="0.5" min="1"><label>循环</label><input type="checkbox" ${a.loop?'checked':''} onchange="updateAnim(${i},'loop',this.checked)"></div></div>
     </div>`;
   }
   document.getElementById('sprite-panel').innerHTML=html;
 }
 
 function selectSprite(i){selected=i;renderPanel()}
-function updateVal(i,prop,val){scenes[curScene].sprites[i][prop]=+val}
+function updateVal(i,prop,val){scenes[curScene].sprites[i][prop]=typeof val==='boolean'?val:+val}
+function updateAnim(i,prop,val){scenes[curScene].sprites[i].anim[prop]=typeof val==='boolean'?val:+val;renderPanel()}
 
 function getClickSprite(mx,my){
   let sps=scenes[curScene].sprites;
   for(let i=sps.length-1;i>=0;i--){
-    let sp=sps[i];
-    let img=images[sp.src];
-    if(!img)continue;
+    let sp=sps[i];let img=images[sp.src];if(!img)continue;
+    let cx=playing?getSpriteX(sp,animTime):sp.x;
     let w=sp.h*img.width/img.height;
-    if(mx>=sp.x&&mx<=sp.x+w&&my>=sp.y&&my<=sp.y+sp.h)return i;
+    if(mx>=cx&&mx<=cx+w&&my>=sp.y&&my<=sp.y+sp.h)return i;
   }
   return null;
 }
@@ -122,20 +144,20 @@ canvas.addEventListener('mousedown',e=>{
   let mx=(e.clientX-rect.left)/scale,my=(e.clientY-rect.top)/scale;
   let idx=getClickSprite(mx,my);
   if(idx!==null){
-    selected=idx;
-    dragging=idx;
+    selected=idx;dragging=idx;
     let sp=scenes[curScene].sprites[idx];
-    dragOx=mx-sp.x;dragOy=my-sp.y;
+    let cx=playing?getSpriteX(sp,animTime):sp.x;
+    dragOx=mx-cx;dragOy=my-sp.y;
     renderPanel();
-  }
+  }else{selected=null;renderPanel()}
 });
 canvas.addEventListener('mousemove',e=>{
   let rect=canvas.getBoundingClientRect();
   let mx=(e.clientX-rect.left)/scale,my=(e.clientY-rect.top)/scale;
   if(dragging!==null){
     let sp=scenes[curScene].sprites[dragging];
-    sp.x=Math.round(mx-dragOx);
-    sp.y=Math.round(my-dragOy);
+    if(playing){sp.anim.startX+=(mx-sp.x-dragOx);sp.anim.endX+=(mx-sp.x-dragOx)}
+    sp.x=Math.round(mx-dragOx);sp.y=Math.round(my-dragOy);
     renderPanel();
   }
   document.getElementById('info').textContent=`鼠标: (${Math.round(mx)}, ${Math.round(my)})`;
@@ -148,31 +170,47 @@ canvas.addEventListener('wheel',e=>{
   let idx=getClickSprite(mx,my);
   if(idx!==null){
     let sp=scenes[curScene].sprites[idx];
-    sp.h=Math.max(4,sp.h+(e.deltaY>0?-2:2));
-    sp.h=Math.round(sp.h);
+    sp.h=Math.max(4,sp.h+(e.deltaY>0?-2:2));sp.h=Math.round(sp.h);
     renderPanel();
   }
 },{passive:false});
+addEventListener('keydown',e=>{
+  if(e.key==='f'||e.key==='F'){
+    if(selected!==null){
+      let sp=scenes[curScene].sprites[selected];
+      sp.flip=!sp.flip;renderPanel();
+    }
+  }
+});
 
-function render(){
+function render(ts){
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(playing){
+    let dt=(ts-lastFrame)/1000;lastFrame=ts;
+    animTime+=dt;
+    let maxDur=getMaxDur();
+    document.getElementById('time-slider').value=Math.round((animTime%maxDur)/maxDur*1000);
+    document.getElementById('time-label').textContent=animTime.toFixed(1)+'s';
+  }
   let sc=scenes[curScene];
   let bgImg=images[sc.bg];
   if(bgImg&&bgImg.complete)ctx.drawImage(bgImg,0,0,W*scale,H*scale);
 
   for(let i=0;i<sc.sprites.length;i++){
-    let sp=sc.sprites[i];
-    let img=images[sp.src];
+    let sp=sc.sprites[i];let img=images[sp.src];
     if(!img||!img.complete)continue;
+    let cx=playing?getSpriteX(sp,animTime):sp.x;
     let w=sp.h*img.width/img.height;
-    let sx=sp.x*scale,sy=sp.y*scale,sw=w*scale,sh=sp.h*scale;
-    ctx.drawImage(img,0,0,img.width,img.height,sx,sy,sw,sh);
+    let sx=cx*scale,sy=sp.y*scale,sw=w*scale,sh=sp.h*scale;
+    if(sp.flip){
+      ctx.save();ctx.translate(sx+sw/2,sy+sh/2);ctx.scale(-1,1);
+      ctx.drawImage(img,0,0,img.width,img.height,-sw/2,-sh/2,sw,sh);ctx.restore();
+    }else{
+      ctx.drawImage(img,0,0,img.width,img.height,sx,sy,sw,sh);
+    }
     if(i===selected){
-      ctx.strokeStyle='#f0b860';ctx.lineWidth=2;
-      ctx.strokeRect(sx-1,sy-1,sw+2,sh+2);
-      // anchor point circle
-      ctx.fillStyle='#f0b860';
-      ctx.beginPath();ctx.arc(sx, sy, 4, 0, Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#f0b860';ctx.lineWidth=2;ctx.strokeRect(sx-1,sy-1,sw+2,sh+2);
+      ctx.fillStyle='#f0b860';ctx.beginPath();ctx.arc(sx,sy,4,0,Math.PI*2);ctx.fill();
     }
   }
   requestAnimationFrame(render);
