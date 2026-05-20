@@ -18,6 +18,7 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;border-radius:4px}
 </head>
 <body>
 <canvas id="c"></canvas>
+<audio id="bgm" loop preload="auto" src="魂狼 - 宝可梦 - 未白镇 (8-bit ver.).mp3"></audio>
 <button id="mb" onclick="toggleMusic()">🔇</button>
 <div class="dlg" id="dlg"><div class="t" id="dt"></div><div class="hint">点击继续</div></div>
 <script>
@@ -211,28 +212,12 @@ function renderCab(){
   drSnow()
 }
 
-// Audio engine
-let actx=null,mon=0,mto=null;
-const NF={G3:196.00,A3:220.00,B3:246.94,C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392.00,A4:440.00,B4:493.88,C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880.00,B5:987.77,C6:1046.50,D6:1174.66,E6:1318.51};
-// Littleroot Town (未白镇) theme — Pokemon RSE, BPM 110
-const mel=[
-  // A section
-  {n:'G3',d:.25},{n:'C4',d:.25},{n:'E4',d:.25},{n:'G4',d:.5},{n:'C4',d:.25},{n:'E4',d:.25},{n:'G4',d:.5},{n:'C5',d:.25},
-  {n:'A3',d:.25},{n:'C4',d:.25},{n:'F4',d:.25},{n:'A4',d:.5},{n:'C4',d:.25},{n:'F4',d:.25},{n:'A4',d:.5},{n:'C5',d:.25},
-  {n:'F3',d:.25},{n:'A3',d:.25},{n:'C4',d:.25},{n:'F4',d:.5},{n:'A3',d:.25},{n:'C4',d:.25},{n:'F4',d:.5},{n:'A4',d:.25},
-  {n:'G3',d:.25},{n:'C4',d:.25},{n:'E4',d:.25},{n:'G4',d:.5},{n:'C4',d:.25},{n:'D4',d:.25},{n:'E4',d:.25},{n:'C5',d:.25},
-  // B section
-  {n:'C5',d:.25},{n:'B4',d:.25},{n:'A4',d:.25},{n:'G4',d:.25},{n:'F4',d:.25},{n:'E4',d:.25},{n:'D4',d:.25},{n:null,d:.25},
-  {n:'E4',d:.25},{n:'F4',d:.25},{n:'G4',d:.25},{n:'A4',d:.25},{n:'B4',d:.25},{n:'C5',d:.25},{n:'D5',d:.25},{n:null,d:.25},
-  {n:'E5',d:.25},{n:'D5',d:.25},{n:'C5',d:.25},{n:'B4',d:.25},{n:'A4',d:.25},{n:'G4',d:.25},{n:'F4',d:.25},{n:null,d:.25},
-  {n:'E4',d:.5},{n:'D4',d:.25},{n:'C4',d:.75},{n:null,d:.5},
-];
-const BPM=110,bd=60/BPM,tb=mel.reduce((s,n)=>s+n.d,0),ld=tb*bd;
-function pn(f,t,dur){let o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07,t+.02);g.gain.setValueAtTime(.07,t+dur*.6);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+dur+.01);let o2=actx.createOscillator(),g2=actx.createGain();o2.type='triangle';o2.frequency.value=f/2;g2.gain.setValueAtTime(0,t);g2.gain.linearRampToValueAtTime(.04,t+.02);g2.gain.setValueAtTime(.04,t+dur*.6);g2.gain.linearRampToValueAtTime(0,t+dur);o2.connect(g2);g2.connect(actx.destination);o2.start(t);o2.stop(t+dur+.01)}
-function sched(){if(!mon||!actx)return;let t=actx.currentTime+.05;for(let{n,d}of mel){let s=d*bd;if(n&&NF[n])pn(NF[n],t,s*.85);t+=s}mto=setTimeout(sched,ld*1000-100)}
-function startM(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();if(actx.state=='suspended')actx.resume();mon=1;sched();document.getElementById('mb').textContent='🎵'}
-function stopM(){mon=0;if(mto){clearTimeout(mto);mto=null}document.getElementById('mb').textContent='🔇'}
-function toggleMusic(){mon?stopM():startM()}window.toggleMusic=toggleMusic;
+// Audio — BGM from mp3, SFX synthesized
+let actx=null;
+const bgm=document.getElementById('bgm');
+function startM(){bgm.play();document.getElementById('mb').textContent='🎵'}
+function stopM(){bgm.pause();document.getElementById('mb').textContent='🔇'}
+function toggleMusic(){bgm.paused?startM():stopM()}window.toggleMusic=toggleMusic;
 function playSFX(tp){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();if(actx.state=='suspended')actx.resume();let n=actx.currentTime;
 if(tp=='adv'){[523,659,784,1047].forEach((f,i)=>{let o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=f;let tn=n+i*.08;g.gain.setValueAtTime(.06,tn);g.gain.linearRampToValueAtTime(0,tn+.12);o.connect(g);g.connect(actx.destination);o.start(tn);o.stop(tn+.13)})}
 if(tp=='click'){let o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=880;g.gain.setValueAtTime(.05,n);g.gain.linearRampToValueAtTime(0,n+.06);o.connect(g);g.connect(actx.destination);o.start(n);o.stop(n+.07)}
@@ -254,7 +239,7 @@ function rndr(){
 function loop(ts){let dt=Math.min((ts-lt)/1000,.1);lt=ts;upd(dt);rndr();fl();requestAnimationFrame(loop)}
 
 // Init
-addEventListener('click',function s(){if(!mon)startM()},{once:1});
+addEventListener('click',function s(){if(bgm.paused)startM()},{once:1});
 requestAnimationFrame(loop);
 </script>
 </body>
