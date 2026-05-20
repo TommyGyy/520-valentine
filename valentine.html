@@ -52,9 +52,10 @@ function P(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w||1,h||1)}
 // ── Image assets ──
 const imgTitle=new Image();imgTitle.src='bg-title.png';
 const imgSki=new Image();imgSki.src='bg-ski.png';
-let imgsReady=0;const imgsNeeded=2;
+const imgCabin=new Image();imgCabin.src='bg-cabin.png';
+let imgsReady=0;const imgsNeeded=3;
 function onImgLoad(){imgsReady++;};
-imgTitle.onload=onImgLoad;imgSki.onload=onImgLoad;
+imgTitle.onload=onImgLoad;imgSki.onload=onImgLoad;imgCabin.onload=onImgLoad;
 function PR(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w,h)}
 function PC(cx,cy,r,c){bx.fillStyle=c;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r)bx.fillRect(cx+dx|0,cy+dy|0,1,1)}
 
@@ -181,27 +182,19 @@ function renderSki(){
 }
 
 function renderCab(){
-  drSky([0x1a,0x1a,0x3a],[0x3a,0x3a,0x6a]);
-  for(let i=0;i<35;i++){let sx=(i*83+17)%W,sy=(i*47+7)%120;let tw=Math.sin(Date.now()/1200+i)*.6+.4;bx.fillStyle=`rgba(255,232,192,${tw})`;bx.fillRect(sx,sy,2,2)}
-  drMt(0,130,130,65,'#3a3a52',C.mtSn);drMt(110,125,120,70,'#303048',C.mtSn);
-  drMt(350,128,140,68,'#3a3a52',C.mtSn);
-  drGround(170);
-  drTree(25,170,30);drTree(60,170,35);drTree(410,170,38);
-  drCab(215,170);
+  bx.drawImage(imgCabin,0,0,W,H);
+  drCh(80,162,C.coatB,'stand');drCh(110,164,C.coatR,'stand');
   let db=Math.sin(Date.now()/300)*.5;drDog(290+db,180);
-  drCh(172,162,C.coatB,'stand');drCh(202,164,C.coatR,'stand');
-  bx.fillStyle='rgba(255,220,120,.25)';bx.fillRect(220,142,12,12);
-  bx.fillStyle='rgba(255,220,120,.25)';bx.fillRect(252,142,12,12);
   for(let h of hrts){h.x+=h.vx*.016;h.y+=h.vy*.016;h.vy-=15*.016;h.life-=.016;let a=Math.min(h.life/2,1);bx.globalAlpha=a;PR(h.x|0,h.y|0,h.s,h.s,C.heart)}
   bx.globalAlpha=1;hrts=hrts.filter(h=>h.life>0);
   if(confess&&(confTm+=.016)>.8){
     let ta=Math.min((confTm-.8)/2,1);
     let lines=['遇见你，是我像素世界里','最美的意外','','从雪山顶到山脚','我想和你一起滑过','人生所有的季节','','520快乐，小冷 ❤'];
-    let sy=48,th=lines.length*12;
-    bx.fillStyle=`rgba(254,248,240,${ta*.92})`;bx.fillRect(110,sy-4,260,th+16);
-    bx.strokeStyle=`rgba(200,149,108,${ta})`;bx.lineWidth=2;bx.strokeRect(110,sy-4,260,th+16);
+    let sy=44,th=lines.length*13;
+    bx.fillStyle=`rgba(254,248,240,${ta*.92})`;bx.fillRect(90,sy-4,300,th+16);
+    bx.strokeStyle=`rgba(200,149,108,${ta})`;bx.lineWidth=2;bx.strokeRect(90,sy-4,300,th+16);
     bx.fillStyle=`rgba(74,48,32,${ta})`;bx.font='9px "Courier New",monospace';
-    for(let i=0;i<lines.length;i++){if(!lines[i])continue;let tw=bx.measureText(lines[i]).width;bx.fillText(lines[i],240-tw/2,sy+6+i*12)}
+    for(let i=0;i<lines.length;i++){if(!lines[i])continue;let tw=bx.measureText(lines[i]).width;bx.fillText(lines[i],240-tw/2,sy+8+i*13)}
   }
   drSnow()
 }
