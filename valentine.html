@@ -48,6 +48,13 @@ const bf=document.createElement('canvas');bf.width=W;bf.height=H;
 const bx=bf.getContext('2d');bx.imageSmoothingEnabled=false;
 function fl(){cx.clearRect(0,0,cv.width,cv.height);cx.drawImage(bf,0,0,W,H,0,0,W*sc,H*sc)}
 function P(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w||1,h||1)}
+
+// ── Image assets ──
+const imgTitle=new Image();imgTitle.src='bg-title.png';
+const imgSki=new Image();imgSki.src='bg-ski.png';
+let imgsReady=0;const imgsNeeded=2;
+function onImgLoad(){imgsReady++;};
+imgTitle.onload=onImgLoad;imgSki.onload=onImgLoad;
 function PR(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w,h)}
 function PC(cx,cy,r,c){bx.fillStyle=c;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r)bx.fillRect(cx+dx|0,cy+dy|0,1,1)}
 
@@ -146,14 +153,7 @@ let scrollX=0,confess=0,confTm=0,hrts=[];
 
 // Scene rendering
 function renderTitle(){
-  drSky([0xf0,0xb8,0x60],[0xf5,0xc8,0x90]);
-  drMt(100,190,90,55,C.mtF,C.mtSn);drMt(20,195,60,40,C.mtF,C.mtSn);
-  drMt(360,185,100,60,C.mtM,C.mtSn);drMt(280,192,75,45,C.mtM,C.mtSn);
-  drGround(210);
-  drTree(40,210,38);drTree(80,215,32);drTree(380,205,45);drTree(420,210,35);drTree(455,212,28);
-  drTree(140,218,24);drTree(310,216,26);
-  drCh(175,188,C.coatB,'stand');drCh(210,190,C.coatR,'stand');
-  drDog(255,200);
+  bx.drawImage(imgTitle,0,0,W,H);
   let tx=170,ty=72;
   let L5=[[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,1]];
   let L2=[[1,1,1,1,1],[0,0,0,0,1],[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,1]];
@@ -171,18 +171,12 @@ function renderTitle(){
 }
 
 function renderSki(){
-  drSky([0x7e,0xb8,0xda],[0xc8,0xdc,0xe8]);
-  scrollX+=1.2;
-  let lyrs=[{y:65,h:95,c:C.mtF,s:.2},{y:55,h:105,c:C.mtM,s:.4},{y:80,h:85,c:C.mtN,s:.3}];
-  for(let l of lyrs){let ox=-(scrollX*l.s)%W;for(let mx=-80;mx<W+80;mx+=110){let mx2=mx+ox;PR(mx2|0,l.y,120,l.h,l.c);PR(mx2+25|0,l.y-6,70,12,C.mtSn)}}
-  let to=-(scrollX*.7)%90;
-  for(let tx=-20;tx<W+40;tx+=45)drTree(tx+to|0,162,24+(tx%3)*5);
-  drGround(168);
+  bx.drawImage(imgSki,0,0,W,H);
   drCh(155,148,C.coatB,'ski');drCh(185,150,C.coatR,'ski');
   drDog(250,156+Math.sin(Date.now()/180)*2);
-  for(let i=0;i<6;i++){let lx=((i*43+scrollX*1.3)%(W+30))-15;P(lx,125+i*10,6+i%2*3,1,'rgba(255,255,255,.35)')}
+  for(let i=0;i<6;i++){let lx=(i*43+Date.now()/80)%(W+30)-15;P(lx|0,125+i*10,6+i%2*3,1,'rgba(255,255,255,.35)')}
   let ba=(Math.sin(Date.now()/600)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
-  bx.fillText('▼ 点击继续',200,260);
+  bx.font='10px "Courier New",monospace';bx.fillText('▼ 点击继续',200,258);
   drSnow()
 }
 
