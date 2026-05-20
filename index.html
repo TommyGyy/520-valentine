@@ -6,7 +6,7 @@
 <title>520 ❤</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#2c1810;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace;cursor:pointer}
+body{background:#2c1810;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 canvas{image-rendering:pixelated;image-rendering:crisp-edges;border-radius:4px}
 #mb{position:absolute;top:14px;right:14px;background:rgba(254,250,246,.9);border:2px solid #c8956c;color:#4a3020;padding:6px 12px;font-size:12px;font-family:'Courier New',monospace;cursor:pointer;z-index:10}
 #mb:hover{background:#f0e0d0}
@@ -174,7 +174,10 @@ const dbox=document.getElementById('dlg'),dtxt=document.getElementById('dt');
 function showDlg(t,cb){if(ds)return;dq=Array.isArray(t)?[...t]:[t];dcb=cb||null;ds=1;nextDlg()}
 function nextDlg(){if(!dq.length){dbox.classList.remove('on');ds=0;if(dcb){let c=dcb;dcb=null;c()}return}
 dtxt.textContent=dq.shift();dbox.classList.add('on')}
-addEventListener('click',e=>{if(e.target.id=='mb')return;if(ds){nextDlg();return}if(trans)return;handleClick()});
+let lastTap=0;
+function onTap(e){if(Date.now()-lastTap<300)return;lastTap=Date.now();if(e.target.id=='mb')return;if(ds){nextDlg();return}if(trans)return;handleClick()}
+addEventListener('touchstart',e=>{e.preventDefault()},{passive:false});
+addEventListener('click',onTap);addEventListener('touchend',onTap);
 
 // Scene state
 let scrollX=0,confess=0,confTm=0,hrts=[];
@@ -267,7 +270,9 @@ function rndr(){
 function loop(ts){let dt=Math.min((ts-lt)/1000,.1);lt=ts;upd(dt);rndr();fl();requestAnimationFrame(loop)}
 
 // Init
-addEventListener('click',function s(){if(bgm.paused)startM()},{once:1});
+const startMusicOnce=()=>{if(bgm.paused)startM();};
+addEventListener('click',startMusicOnce,{once:true});
+addEventListener('touchend',startMusicOnce,{once:true});
 window.addEventListener('load',()=>requestAnimationFrame(loop));
 </script>
 </body>
