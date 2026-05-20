@@ -57,7 +57,7 @@ loadImg('boy','boy-stand.png');loadImg('boySki','boy-ski.png');
 loadImg('girl','girl-stand.png');loadImg('girlSki','girl-ski.png');
 loadImg('dog','dog.png');loadImg('house','house.png');
 loadImg('treeL','tree-large.png');loadImg('treeS','tree-small.png');
-function drSpr(key,x,y,h){let img=S[key];if(!img||!img.complete)return;let w=h*img.width/img.height;bx.drawImage(img,0,0,img.width,img.height,x|0,y|0,w|0,h|0)}
+function drSpr(key,x,y,h,flip){let img=S[key];if(!img||!img.complete)return;let w=h*img.width/img.height;let dx=x|0,dy=y|0,dw=w|0,dh=h|0;if(flip){bx.save();bx.translate(dx+dw/2,dy+dh/2);bx.scale(-1,1);bx.drawImage(img,0,0,img.width,img.height,-dw/2,-dh/2,dw,dh);bx.restore()}else{bx.drawImage(img,0,0,img.width,img.height,dx,dy,dw,dh)}}
 function PR(x,y,w,h,c){bx.fillStyle=c;bx.fillRect(x|0,y|0,w,h)}
 function PC(cx,cy,r,c){bx.fillStyle=c;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r)bx.fillRect(cx+dx|0,cy+dy|0,1,1)}
 
@@ -174,10 +174,17 @@ function renderTitle(){
 
 function renderSki(){
   bx.drawImage(S['ski'],0,0,W,H);
-  drSpr('boySki',155,150,34);drSpr('girlSki',185,150,34);
-  let db=Math.sin(Date.now()/180)*2;drSpr('dog',250,156+db,22);
-  for(let i=0;i<6;i++){let lx=(i*43+Date.now()/80)%(W+30)-15;P(lx|0,125+i*10,6+i%2*3,1,'rgba(255,255,255,.35)')}
-  let ba=(Math.sin(Date.now()/600)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
+  // Animated left-to-right looping
+  let t=Date.now()/1000;
+  let cycle=W+200;
+  let boyX=((t*55)%cycle)-100;if(boyX<-60)boyX+=cycle;
+  let girlX=((t*58+40)%cycle)-100;if(girlX<-60)girlX+=cycle;
+  let dogX=((t*65+90)%cycle)-100;if(dogX<-60)dogX+=cycle;
+  let db=Math.sin(t*6)*2;
+  drSpr('boySki',boyX,150,34);drSpr('girlSki',girlX,150,34);
+  drSpr('dog',dogX,156+db,22);
+  for(let i=0;i<6;i++){let lx=(i*43+t*60)%(W+30)-15;P(lx|0,125+i*10,6+i%2*3,1,'rgba(255,255,255,.35)')}
+  let ba=(Math.sin(t*3)+1)/2;bx.fillStyle=`rgba(74,48,32,${.3+ba*.7})`;
   bx.font='10px "Courier New",monospace';bx.fillText('▼ 点击继续',200,258);
   drSnow()
 }
